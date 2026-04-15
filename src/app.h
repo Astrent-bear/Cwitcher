@@ -64,9 +64,9 @@
 #define IDC_SETTINGS_BRAND 41022
 
 #ifdef _DEBUG
-#define APP_VERSION L"0.1.1-debug"
+#define APP_VERSION L"0.2.0-debug"
 #else
-#define APP_VERSION L"0.1.1"
+#define APP_VERSION L"0.2.0"
 #endif
 
 #define DEFAULT_SELECTED_HOTKEY_VK VK_PAUSE_KEY
@@ -75,8 +75,8 @@
 #define DEFAULT_LASTWORD_HOTKEY_MODIFIERS 0
 
 typedef struct KeyPair {
-    wchar_t normal;
-    wchar_t shifted;
+    const wchar_t *normal;
+    const wchar_t *shifted;
 } KeyPair;
 
 typedef struct LayoutDef {
@@ -181,6 +181,7 @@ BOOL TransformSelectedText(void);
 BOOL TransformLastWord(void);
 void ResetLastWordTracker(void);
 void UpdateLastWordTrackerFromKey(const KBDLLHOOKSTRUCT *kbd);
+int RunLayoutSelfTest(void);
 
 void CreateTrayIcons(void);
 void DestroyTrayIcons(void);

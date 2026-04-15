@@ -19,6 +19,11 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prev, PWSTR cmd, int show) {
     g_instance = instance;
     LoadSettings(&g_settings);
     LogDebug(L"=== App started ===");
+
+    if (cmd != NULL && wcsstr(cmd, L"--self-test") != NULL) {
+        return RunLayoutSelfTest();
+    }
+
     RefreshInstalledLayouts();
     CreateTrayIcons();
 

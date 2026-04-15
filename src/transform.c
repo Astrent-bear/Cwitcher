@@ -1,71 +1,12 @@
 #include "app.h"
 
-static const LayoutDef *g_installed_layouts[16] = { 0 };
-static HKL g_installed_hkls[16] = { 0 };
+#define MAX_INSTALLED_LAYOUTS 32
+
+static const LayoutDef *g_installed_layouts[MAX_INSTALLED_LAYOUTS] = { 0 };
+static HKL g_installed_hkls[MAX_INSTALLED_LAYOUTS] = { 0 };
 static size_t g_installed_layout_count = 0;
 
-static const KeyPair EN_KEYS[] = {
-    { L'`', L'~' }, { L'1', L'!' }, { L'2', L'@' }, { L'3', L'#' }, { L'4', L'$' },
-    { L'5', L'%' }, { L'6', L'^' }, { L'7', L'&' }, { L'8', L'*' }, { L'9', L'(' },
-    { L'0', L')' }, { L'-', L'_' }, { L'=', L'+' },
-    { L'q', L'Q' }, { L'w', L'W' }, { L'e', L'E' }, { L'r', L'R' }, { L't', L'T' },
-    { L'y', L'Y' }, { L'u', L'U' }, { L'i', L'I' }, { L'o', L'O' }, { L'p', L'P' },
-    { L'[', L'{' }, { L']', L'}' }, { L'\\', L'|' },
-    { L'a', L'A' }, { L's', L'S' }, { L'd', L'D' }, { L'f', L'F' }, { L'g', L'G' },
-    { L'h', L'H' }, { L'j', L'J' }, { L'k', L'K' }, { L'l', L'L' }, { L';', L':' },
-    { L'\'', L'"' },
-    { L'z', L'Z' }, { L'x', L'X' }, { L'c', L'C' }, { L'v', L'V' }, { L'b', L'B' },
-    { L'n', L'N' }, { L'm', L'M' }, { L',', L'<' }, { L'.', L'>' }, { L'/', L'?' }
-};
-
-static const KeyPair EN_GB_KEYS[] = {
-    { L'`', L'\x00AC' }, { L'1', L'!' }, { L'2', L'"' }, { L'3', L'\x00A3' }, { L'4', L'$' },
-    { L'5', L'%' }, { L'6', L'^' }, { L'7', L'&' }, { L'8', L'*' }, { L'9', L'(' },
-    { L'0', L')' }, { L'-', L'_' }, { L'=', L'+' },
-    { L'q', L'Q' }, { L'w', L'W' }, { L'e', L'E' }, { L'r', L'R' }, { L't', L'T' },
-    { L'y', L'Y' }, { L'u', L'U' }, { L'i', L'I' }, { L'o', L'O' }, { L'p', L'P' },
-    { L'[', L'{' }, { L']', L'}' }, { L'#', L'~' },
-    { L'a', L'A' }, { L's', L'S' }, { L'd', L'D' }, { L'f', L'F' }, { L'g', L'G' },
-    { L'h', L'H' }, { L'j', L'J' }, { L'k', L'K' }, { L'l', L'L' }, { L';', L':' },
-    { L'\'', L'@' },
-    { L'z', L'Z' }, { L'x', L'X' }, { L'c', L'C' }, { L'v', L'V' }, { L'b', L'B' },
-    { L'n', L'N' }, { L'm', L'M' }, { L',', L'<' }, { L'.', L'>' }, { L'/', L'?' }
-};
-
-static const KeyPair RU_KEYS[] = {
-    { L'\x0451', L'\x0401' }, { L'1', L'!' }, { L'2', L'"' }, { L'3', L'\x2116' }, { L'4', L';' },
-    { L'5', L'%' }, { L'6', L':' }, { L'7', L'?' }, { L'8', L'*' }, { L'9', L'(' },
-    { L'0', L')' }, { L'-', L'_' }, { L'=', L'+' },
-    { L'\x0439', L'\x0419' }, { L'\x0446', L'\x0426' }, { L'\x0443', L'\x0423' }, { L'\x043A', L'\x041A' }, { L'\x0435', L'\x0415' },
-    { L'\x043D', L'\x041D' }, { L'\x0433', L'\x0413' }, { L'\x0448', L'\x0428' }, { L'\x0449', L'\x0429' }, { L'\x0437', L'\x0417' },
-    { L'\x0445', L'\x0425' }, { L'\x044A', L'\x042A' }, { L'\\', L'/' },
-    { L'\x0444', L'\x0424' }, { L'\x044B', L'\x042B' }, { L'\x0432', L'\x0412' }, { L'\x0430', L'\x0410' }, { L'\x043F', L'\x041F' },
-    { L'\x0440', L'\x0420' }, { L'\x043E', L'\x041E' }, { L'\x043B', L'\x041B' }, { L'\x0434', L'\x0414' }, { L'\x0436', L'\x0416' },
-    { L'\x044D', L'\x042D' },
-    { L'\x044F', L'\x042F' }, { L'\x0447', L'\x0427' }, { L'\x0441', L'\x0421' }, { L'\x043C', L'\x041C' }, { L'\x0438', L'\x0418' },
-    { L'\x0442', L'\x0422' }, { L'\x044C', L'\x042C' }, { L'\x0431', L'\x0411' }, { L'\x044E', L'\x042E' }, { L'.', L',' }
-};
-
-static const KeyPair UK_KEYS[] = {
-    { L'\'', L'\x20B4' }, { L'1', L'!' }, { L'2', L'"' }, { L'3', L'\x2116' }, { L'4', L';' },
-    { L'5', L'%' }, { L'6', L':' }, { L'7', L'?' }, { L'8', L'*' }, { L'9', L'(' },
-    { L'0', L')' }, { L'-', L'_' }, { L'=', L'+' },
-    { L'\x0439', L'\x0419' }, { L'\x0446', L'\x0426' }, { L'\x0443', L'\x0423' }, { L'\x043A', L'\x041A' }, { L'\x0435', L'\x0415' },
-    { L'\x043D', L'\x041D' }, { L'\x0433', L'\x0413' }, { L'\x0448', L'\x0428' }, { L'\x0449', L'\x0429' }, { L'\x0437', L'\x0417' },
-    { L'\x0445', L'\x0425' }, { L'\x0457', L'\x0407' }, { L'\\', L'/' },
-    { L'\x0444', L'\x0424' }, { L'\x0456', L'\x0406' }, { L'\x0432', L'\x0412' }, { L'\x0430', L'\x0410' }, { L'\x043F', L'\x041F' },
-    { L'\x0440', L'\x0420' }, { L'\x043E', L'\x041E' }, { L'\x043B', L'\x041B' }, { L'\x0434', L'\x0414' }, { L'\x0436', L'\x0416' },
-    { L'\x0454', L'\x0404' },
-    { L'\x044F', L'\x042F' }, { L'\x0447', L'\x0427' }, { L'\x0441', L'\x0421' }, { L'\x043C', L'\x041C' }, { L'\x0438', L'\x0418' },
-    { L'\x0442', L'\x0422' }, { L'\x044C', L'\x042C' }, { L'\x0431', L'\x0411' }, { L'\x044E', L'\x042E' }, { L'.', L',' }
-};
-
-static const LayoutDef ALL_LAYOUTS[] = {
-    { L"en",    L"EN", L"English",    L"latin",    0x0409, RGB(36, 82, 160), EN_KEYS,    sizeof(EN_KEYS) / sizeof(EN_KEYS[0]) },
-    { L"en-gb", L"EN", L"English UK", L"latin",    0x0809, RGB(36, 82, 160), EN_GB_KEYS, sizeof(EN_GB_KEYS) / sizeof(EN_GB_KEYS[0]) },
-    { L"ru",    L"RU", L"Russian",    L"cyrillic", 0x0419, RGB(168, 44, 44), RU_KEYS,    sizeof(RU_KEYS) / sizeof(RU_KEYS[0]) },
-    { L"uk",    L"UK", L"Ukrainian",  L"cyrillic", 0x0422, RGB(0, 116, 143), UK_KEYS,    sizeof(UK_KEYS) / sizeof(UK_KEYS[0]) }
-};
+#include "layout_data.inc"
 
 static wchar_t *DupWideString(const wchar_t *value) {
     size_t length;
@@ -327,6 +268,82 @@ static BOOL IsEnglishLayout(const LayoutDef *layout) {
     return wcscmp(layout->code, L"en") == 0 || wcscmp(layout->code, L"en-gb") == 0;
 }
 
+static const wchar_t *GetTokenOrEmpty(const wchar_t *token) {
+    return token != NULL ? token : L"";
+}
+
+static size_t GetTokenLength(const wchar_t *token) {
+    return wcslen(GetTokenOrEmpty(token));
+}
+
+static size_t GetTokenPrefixMatchLength(const wchar_t *text, const wchar_t *token) {
+    size_t length;
+
+    token = GetTokenOrEmpty(token);
+    length = wcslen(token);
+    if (length == 0) {
+        return 0;
+    }
+
+    if (wcsncmp(text, token, length) == 0) {
+        return length;
+    }
+
+    return 0;
+}
+
+static BOOL FindLayoutTokenMatch(const LayoutDef *layout, const wchar_t *text, size_t *key_index, BOOL *use_shifted, size_t *match_length) {
+    size_t i;
+    size_t best_length = 0;
+    size_t best_index = 0;
+    BOOL best_shifted = FALSE;
+
+    for (i = 0; i < layout->key_count; ++i) {
+        size_t normal_length = GetTokenPrefixMatchLength(text, layout->keys[i].normal);
+        if (normal_length > best_length) {
+            best_length = normal_length;
+            best_index = i;
+            best_shifted = FALSE;
+        }
+
+        size_t shifted_length = GetTokenPrefixMatchLength(text, layout->keys[i].shifted);
+        if (shifted_length > best_length) {
+            best_length = shifted_length;
+            best_index = i;
+            best_shifted = TRUE;
+        }
+    }
+
+    if (best_length == 0) {
+        return FALSE;
+    }
+
+    *key_index = best_index;
+    *use_shifted = best_shifted;
+    *match_length = best_length;
+    return TRUE;
+}
+
+static int ScoreTextForLayout(const wchar_t *text, const LayoutDef *layout) {
+    size_t index = 0;
+    int score = 0;
+
+    while (text[index] != L'\0') {
+        size_t key_index;
+        size_t match_length;
+        BOOL use_shifted;
+
+        if (FindLayoutTokenMatch(layout, text + index, &key_index, &use_shifted, &match_length)) {
+            score += (int)match_length;
+            index += match_length;
+        } else {
+            ++index;
+        }
+    }
+
+    return score;
+}
+
 static const LayoutDef *FindInstalledLayoutByCode(const wchar_t *code) {
     size_t i;
 
@@ -450,21 +467,9 @@ static BOOL SendUnicodeText(const wchar_t *text) {
     return TRUE;
 }
 
-static const wchar_t *GetCharCategory(wchar_t ch) {
-    if ((ch >= L'a' && ch <= L'z') || (ch >= L'A' && ch <= L'Z')) {
-        return L"latin";
-    }
-    if (ch >= 0x0400 && ch <= 0x052F) {
-        return L"cyrillic";
-    }
-    return L"other";
-}
-
 static BOOL DetectSourceTargetLayouts(const wchar_t *text, const LayoutDef **source, const LayoutDef **target) {
     size_t i;
-    int latin = 0;
-    int cyrillic = 0;
-    const wchar_t *dominant = L"";
+    int best_score = -1;
 
     *source = NULL;
     *target = NULL;
@@ -477,50 +482,21 @@ static BOOL DetectSourceTargetLayouts(const wchar_t *text, const LayoutDef **sou
         return FALSE;
     }
 
-    for (i = 0; text[i] != L'\0'; ++i) {
-        const wchar_t *category = GetCharCategory(text[i]);
-        if (wcscmp(category, L"latin") == 0) {
-            ++latin;
-        } else if (wcscmp(category, L"cyrillic") == 0) {
-            ++cyrillic;
-        }
-    }
-
-    if (latin > cyrillic) {
-        dominant = L"latin";
-    } else if (cyrillic > latin) {
-        dominant = L"cyrillic";
-    }
-
-    if (dominant[0] == L'\0') {
-        if (g_installed_layout_count >= 2) {
-            *source = g_installed_layouts[0];
-            *target = g_installed_layouts[1];
-            return TRUE;
-        }
-        return FALSE;
-    }
-
     for (i = 0; i < g_installed_layout_count; ++i) {
-        if (wcscmp(g_installed_layouts[i]->category, dominant) == 0) {
+        int score = ScoreTextForLayout(text, g_installed_layouts[i]);
+        if (score > best_score) {
+            best_score = score;
             *source = g_installed_layouts[i];
-            break;
         }
     }
 
-    if (*source == NULL) {
+    if (*source == NULL || best_score <= 0) {
         return FALSE;
     }
 
-    for (i = 0; i < g_installed_layout_count; ++i) {
-        if (wcscmp(g_installed_layouts[i]->code, (*source)->code) != 0 &&
-            wcscmp(g_installed_layouts[i]->category, (*source)->category) != 0) {
-            *target = g_installed_layouts[i];
-            break;
-        }
-    }
+    *target = GetNextCycleLayout(*source);
 
-    if (*target == NULL) {
+    if (*target == NULL || wcscmp((*target)->code, (*source)->code) == 0) {
         for (i = 0; i < g_installed_layout_count; ++i) {
             if (wcscmp(g_installed_layouts[i]->code, (*source)->code) != 0) {
                 *target = g_installed_layouts[i];
@@ -545,44 +521,322 @@ static BOOL ResolveSelectedTextLayouts(const wchar_t *text, const LayoutDef **so
     return DetectSourceTargetLayouts(text, source, target);
 }
 
-static BOOL MapCharBetweenLayouts(const LayoutDef *source, const LayoutDef *target, wchar_t ch, wchar_t *mapped) {
-    size_t i;
-    size_t limit = source->key_count < target->key_count ? source->key_count : target->key_count;
+static const wchar_t *MapTokenBetweenLayouts(const LayoutDef *source, const LayoutDef *target, const wchar_t *text, size_t *consumed_length) {
+    size_t key_index;
+    size_t match_length;
+    BOOL use_shifted;
+    const wchar_t *mapped;
 
-    for (i = 0; i < limit; ++i) {
-        if (source->keys[i].normal == ch) {
-            *mapped = target->keys[i].normal;
-            return TRUE;
-        }
-        if (source->keys[i].shifted == ch) {
-            *mapped = target->keys[i].shifted;
-            return TRUE;
-        }
+    if (!FindLayoutTokenMatch(source, text, &key_index, &use_shifted, &match_length)) {
+        return NULL;
     }
 
-    return FALSE;
+    *consumed_length = match_length;
+    mapped = use_shifted ? target->keys[key_index].shifted : target->keys[key_index].normal;
+    if (GetTokenLength(mapped) == 0) {
+        return use_shifted ? source->keys[key_index].shifted : source->keys[key_index].normal;
+    }
+
+    return mapped;
 }
 
 static wchar_t *ConvertTextDynamic(const wchar_t *text, const LayoutDef *source, const LayoutDef *target) {
-    size_t i;
-    size_t length = wcslen(text);
-    wchar_t *result = (wchar_t *)malloc((length + 1) * sizeof(wchar_t));
+    size_t index = 0;
+    size_t written = 0;
+    size_t capacity = (wcslen(text) * 4) + 16;
+    wchar_t *result = (wchar_t *)malloc(capacity * sizeof(wchar_t));
 
     if (result == NULL) {
         return NULL;
     }
 
-    for (i = 0; i < length; ++i) {
-        wchar_t mapped;
-        if (MapCharBetweenLayouts(source, target, text[i], &mapped)) {
-            result[i] = mapped;
+    while (text[index] != L'\0') {
+        size_t consumed_length = 0;
+        const wchar_t *mapped = MapTokenBetweenLayouts(source, target, text + index, &consumed_length);
+        size_t mapped_length;
+
+        if (mapped == NULL || consumed_length == 0) {
+            if (written + 2 > capacity) {
+                size_t new_capacity = capacity * 2;
+                wchar_t *expanded = (wchar_t *)realloc(result, new_capacity * sizeof(wchar_t));
+                if (expanded == NULL) {
+                    free(result);
+                    return NULL;
+                }
+                result = expanded;
+                capacity = new_capacity;
+            }
+
+            result[written++] = text[index++];
         } else {
-            result[i] = text[i];
+            mapped = GetTokenOrEmpty(mapped);
+            mapped_length = wcslen(mapped);
+            if (written + mapped_length + 1 > capacity) {
+                size_t new_capacity = capacity;
+                while (written + mapped_length + 1 > new_capacity) {
+                    new_capacity *= 2;
+                }
+
+                wchar_t *expanded = (wchar_t *)realloc(result, new_capacity * sizeof(wchar_t));
+                if (expanded == NULL) {
+                    free(result);
+                    return NULL;
+                }
+                result = expanded;
+                capacity = new_capacity;
+            }
+
+            memcpy(result + written, mapped, mapped_length * sizeof(wchar_t));
+            written += mapped_length;
+            index += consumed_length;
         }
     }
 
-    result[length] = L'\0';
+    result[written] = L'\0';
     return result;
+}
+
+static BOOL BuildSelfTestReportPath(wchar_t *path, size_t capacity) {
+    wchar_t *slash;
+
+    if (GetModuleFileNameW(NULL, path, (DWORD)capacity) == 0) {
+        return FALSE;
+    }
+
+    slash = wcsrchr(path, L'\\');
+    if (slash == NULL) {
+        return FALSE;
+    }
+
+    slash[1] = L'\0';
+    return SUCCEEDED(StringCchCatW(path, capacity, L"layout-selftest-report.txt"));
+}
+
+static void WriteSelfTestLine(FILE *file, const wchar_t *format, ...) {
+    wchar_t buffer[1024];
+    va_list args;
+
+    if (file == NULL) {
+        return;
+    }
+
+    va_start(args, format);
+    vswprintf(buffer, sizeof(buffer) / sizeof(buffer[0]), format, args);
+    va_end(args);
+
+    fputws(buffer, file);
+    fputws(L"\n", file);
+}
+
+static BOOL TokensEqual(const wchar_t *left, const wchar_t *right) {
+    return wcscmp(GetTokenOrEmpty(left), GetTokenOrEmpty(right)) == 0;
+}
+
+static void ReportLayoutDuplicateTokens(FILE *report, const LayoutDef *layout, int *warning_count, int *detail_count) {
+    size_t i;
+    size_t j;
+
+    for (i = 0; i < layout->key_count; ++i) {
+        for (j = i + 1; j < layout->key_count; ++j) {
+            if (GetTokenLength(layout->keys[i].normal) > 0 &&
+                TokensEqual(layout->keys[i].normal, layout->keys[j].normal)) {
+                ++(*warning_count);
+                if (*detail_count < 256) {
+                    WriteSelfTestLine(report,
+                        L"[warn] %ls has duplicate normal token %ls at keys %zu and %zu.",
+                        layout->code, layout->keys[i].normal, i, j);
+                    ++(*detail_count);
+                }
+            }
+
+            if (GetTokenLength(layout->keys[i].shifted) > 0 &&
+                TokensEqual(layout->keys[i].shifted, layout->keys[j].shifted)) {
+                ++(*warning_count);
+                if (*detail_count < 256) {
+                    WriteSelfTestLine(report,
+                        L"[warn] %ls has duplicate shifted token %ls at keys %zu and %zu.",
+                        layout->code, layout->keys[i].shifted, i, j);
+                    ++(*detail_count);
+                }
+            }
+        }
+    }
+}
+
+static int CountTokenOccurrencesInLayout(const LayoutDef *layout, const wchar_t *token) {
+    size_t i;
+    int count = 0;
+
+    if (GetTokenLength(token) == 0) {
+        return 0;
+    }
+
+    for (i = 0; i < layout->key_count; ++i) {
+        if (TokensEqual(layout->keys[i].normal, token)) {
+            ++count;
+        }
+        if (TokensEqual(layout->keys[i].shifted, token)) {
+            ++count;
+        }
+    }
+
+    return count;
+}
+
+static void ReportLayoutTokenIssues(FILE *report, const LayoutDef *layout, int *fatal_count, int *warning_count, int *detail_count) {
+    size_t i;
+
+    if (layout->key_count == 0) {
+        ++(*fatal_count);
+        if (*detail_count < 256) {
+            WriteSelfTestLine(report, L"[fatal] %ls has no keys.", layout->code);
+            ++(*detail_count);
+        }
+    }
+
+    for (i = 0; i < layout->key_count; ++i) {
+        if (layout->keys[i].normal == NULL || layout->keys[i].shifted == NULL) {
+            ++(*fatal_count);
+            if (*detail_count < 256) {
+                WriteSelfTestLine(report, L"[fatal] %ls has a null token pointer at key index %zu.", layout->code, i);
+                ++(*detail_count);
+            }
+            continue;
+        }
+
+        if (GetTokenLength(layout->keys[i].normal) == 0) {
+            ++(*fatal_count);
+            if (*detail_count < 256) {
+                WriteSelfTestLine(report, L"[fatal] %ls has an empty normal token at key index %zu.", layout->code, i);
+                ++(*detail_count);
+            }
+        }
+
+        if (GetTokenLength(layout->keys[i].shifted) == 0) {
+            ++(*warning_count);
+            if (*detail_count < 256) {
+                WriteSelfTestLine(report, L"[warn] %ls has an empty shifted token at key index %zu.", layout->code, i);
+                ++(*detail_count);
+            }
+        }
+    }
+
+    ReportLayoutDuplicateTokens(report, layout, warning_count, detail_count);
+}
+
+static void ReportRoundTripIssues(FILE *report, const LayoutDef *source, const LayoutDef *target, int *fatal_count, int *warning_count, int *detail_count) {
+    size_t i;
+    size_t limit = source->key_count < target->key_count ? source->key_count : target->key_count;
+
+    for (i = 0; i < limit; ++i) {
+        int slot;
+
+        for (slot = 0; slot < 2; ++slot) {
+            const wchar_t *source_token = slot == 0 ? source->keys[i].normal : source->keys[i].shifted;
+            const wchar_t *expected_token = slot == 0 ? target->keys[i].normal : target->keys[i].shifted;
+            BOOL ambiguous_source_token;
+            wchar_t *converted;
+            wchar_t *roundtrip;
+
+            if (GetTokenLength(source_token) == 0) {
+                continue;
+            }
+
+            ambiguous_source_token = CountTokenOccurrencesInLayout(source, source_token) > 1;
+
+            converted = ConvertTextDynamic(source_token, source, target);
+            if (converted == NULL) {
+                ++(*fatal_count);
+                if (*detail_count < 256) {
+                    WriteSelfTestLine(report, L"[fatal] Conversion allocation failed for %ls -> %ls.", source->code, target->code);
+                    ++(*detail_count);
+                }
+                return;
+            }
+
+            if (GetTokenLength(expected_token) == 0) {
+                expected_token = source_token;
+            }
+
+            if (!ambiguous_source_token && wcscmp(converted, expected_token) != 0) {
+                ++(*warning_count);
+                if (*detail_count < 256) {
+                    WriteSelfTestLine(report,
+                        L"[warn] %ls -> %ls exact token mismatch at key %zu slot %d: got %ls, expected %ls.",
+                        source->code, target->code, i, slot, converted, expected_token);
+                    ++(*detail_count);
+                }
+                free(converted);
+                continue;
+            }
+
+            roundtrip = ConvertTextDynamic(converted, target, source);
+            if (roundtrip == NULL) {
+                ++(*fatal_count);
+                if (*detail_count < 256) {
+                    WriteSelfTestLine(report, L"[fatal] Round-trip allocation failed for %ls -> %ls.", source->code, target->code);
+                    ++(*detail_count);
+                }
+                free(converted);
+                return;
+            }
+
+            if (!ambiguous_source_token && wcscmp(roundtrip, source_token) != 0) {
+                ++(*warning_count);
+                if (*detail_count < 256) {
+                    WriteSelfTestLine(report,
+                        L"[warn] %ls -> %ls round-trip changed %ls into %ls.",
+                        source->code, target->code, source_token, roundtrip);
+                    ++(*detail_count);
+                }
+            }
+
+            free(converted);
+            free(roundtrip);
+        }
+    }
+}
+
+int RunLayoutSelfTest(void) {
+    wchar_t report_path[MAX_PATH];
+    FILE *report = NULL;
+    int fatal_count = 0;
+    int warning_count = 0;
+    int detail_count = 0;
+    size_t i;
+    size_t j;
+
+    if (BuildSelfTestReportPath(report_path, sizeof(report_path) / sizeof(report_path[0]))) {
+        report = _wfopen(report_path, L"w, ccs=UTF-8");
+    }
+
+    WriteSelfTestLine(report, L"Cwitcher layout self-test");
+    WriteSelfTestLine(report, L"Supported layouts: %zu", sizeof(ALL_LAYOUTS) / sizeof(ALL_LAYOUTS[0]));
+
+    for (i = 0; i < sizeof(ALL_LAYOUTS) / sizeof(ALL_LAYOUTS[0]); ++i) {
+        ReportLayoutTokenIssues(report, &ALL_LAYOUTS[i], &fatal_count, &warning_count, &detail_count);
+    }
+
+    for (i = 0; i < sizeof(ALL_LAYOUTS) / sizeof(ALL_LAYOUTS[0]); ++i) {
+        for (j = 0; j < sizeof(ALL_LAYOUTS) / sizeof(ALL_LAYOUTS[0]); ++j) {
+            if (i == j) {
+                continue;
+            }
+
+            ReportRoundTripIssues(report, &ALL_LAYOUTS[i], &ALL_LAYOUTS[j], &fatal_count, &warning_count, &detail_count);
+        }
+    }
+
+    WriteSelfTestLine(report, L"Summary: fatal=%d warning=%d", fatal_count, warning_count);
+    if (report != NULL) {
+        fclose(report);
+    }
+
+    if (fatal_count > 0) {
+        return 1;
+    }
+
+    return warning_count > 0 ? 2 : 0;
 }
 
 static BOOL SwitchToLayoutByCode(const wchar_t *code) {
@@ -628,7 +882,7 @@ BOOL RefreshInstalledLayouts(void) {
     actual = GetKeyboardLayoutList(count, buffer);
     unique_count = 0;
 
-    for (i = 0; i < actual && unique_count < 16; ++i) {
+    for (i = 0; i < actual && unique_count < MAX_INSTALLED_LAYOUTS; ++i) {
         WORD lang_id = LOWORD((DWORD_PTR)buffer[i]);
         const LayoutDef *layout = FindLayoutByLangId(lang_id);
         size_t j;
