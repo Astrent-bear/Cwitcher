@@ -1,0 +1,64 @@
+name: Bug report
+description: Report a reproducible problem in KeyboardSwitcherC
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a problem. Please provide enough detail to reproduce it.
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Release version, commit hash, or local build info
+      placeholder: v0.1.0
+    validations:
+      required: true
+  - type: dropdown
+    id: install_type
+    attributes:
+      label: Install type
+      options:
+        - Portable release asset
+        - Local Visual Studio build
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open Telegram
+        2. Type ghbdtn
+        3. Press Pause/Break
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected result
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual result
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Windows version, input languages, target app, relevant settings
+      placeholder: |
+        Windows 11
+        Layouts: EN, RU, UK
+        App: Discord
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs or screenshots
+      description: Paste relevant debug log lines or attach screenshots if available
