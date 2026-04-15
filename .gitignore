@@ -1,0 +1,28 @@
+# Visual Studio
+.vs/
+*.user
+*.VC.db
+*.VC.opendb
+*.suo
+
+# Build output
+bin/
+obj/
+Debug/
+Release/
+x64/
+x86/
+
+# Debug symbols and intermediates
+*.pdb
+*.ilk
+*.idb
+*.log
+*.tlog
+*.lastbuildstate
+*.obj
+*.lib
+*.exp
+
+# Local settings / generated files
+keyboard-switcher-c.log
