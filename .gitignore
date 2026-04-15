@@ -12,6 +12,7 @@ Debug/
 Release/
 x64/
 x86/
+dist/
 
 # Debug symbols and intermediates
 *.pdb
