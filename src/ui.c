@@ -19,6 +19,7 @@ static HFONT g_settings_brand_font = NULL;
 static HFONT g_settings_heading_font = NULL;
 static HFONT g_settings_body_font = NULL;
 static HFONT g_settings_small_font = NULL;
+static HFONT g_settings_hint_font = NULL;
 static HFONT g_settings_button_font = NULL;
 static HFONT g_settings_icon_font = NULL;
 static HBRUSH g_settings_background_brush = NULL;
@@ -54,7 +55,7 @@ static const wchar_t *GITHUB_REPOSITORY_URL = L"https://github.com/Astrent-bear/
 #define SETTINGS_LANGUAGE_MENU_EN 42001
 #define SETTINGS_LANGUAGE_MENU_UK 42002
 
-#define SETTINGS_CLIENT_WIDTH 720
+#define SETTINGS_CLIENT_WIDTH 680
 #define SETTINGS_CLIENT_HEIGHT 780
 #define UI_MARGIN 28
 #define UI_CARD_RADIUS 16
@@ -64,6 +65,10 @@ static const wchar_t *GITHUB_REPOSITORY_URL = L"https://github.com/Astrent-bear/
 #define UI_BUTTON_ICON_SIZE 20
 #define UI_HOTKEY_CONTROL_HEIGHT 32
 #define UI_STORE_BUTTON_SIZE 68
+#define UI_TOGGLE_WIDTH 52
+#define UI_TOGGLE_HEIGHT 28
+#define UI_LANGUAGE_MENU_WIDTH 176
+#define UI_LANGUAGE_MENU_ITEM_HEIGHT 30
 #define UI_BACKGROUND RGB(248, 250, 252)
 #define UI_CARD RGB(255, 255, 255)
 #define UI_BORDER RGB(229, 235, 243)
@@ -464,6 +469,7 @@ static void DestroySettingsUiResources(void) {
     if (g_settings_heading_font != NULL) DeleteObject(g_settings_heading_font);
     if (g_settings_body_font != NULL) DeleteObject(g_settings_body_font);
     if (g_settings_small_font != NULL) DeleteObject(g_settings_small_font);
+    if (g_settings_hint_font != NULL) DeleteObject(g_settings_hint_font);
     if (g_settings_button_font != NULL) DeleteObject(g_settings_button_font);
     if (g_settings_icon_font != NULL) DeleteObject(g_settings_icon_font);
     if (g_settings_background_brush != NULL) DeleteObject(g_settings_background_brush);
@@ -475,6 +481,7 @@ static void DestroySettingsUiResources(void) {
     g_settings_heading_font = NULL;
     g_settings_body_font = NULL;
     g_settings_small_font = NULL;
+    g_settings_hint_font = NULL;
     g_settings_button_font = NULL;
     g_settings_icon_font = NULL;
     g_settings_background_brush = NULL;
@@ -483,19 +490,22 @@ static void DestroySettingsUiResources(void) {
 
 static void EnsureSettingsUiResources(HWND hwnd) {
     if (g_settings_title_font == NULL) {
-        g_settings_title_font = CreateSettingsFont(hwnd, 20, FW_SEMIBOLD, FALSE);
+        g_settings_title_font = CreateSettingsFont(hwnd, 20, FW_BOLD, FALSE);
     }
     if (g_settings_brand_font == NULL) {
         g_settings_brand_font = CreateSettingsFont(hwnd, 28, FW_SEMIBOLD, FALSE);
     }
     if (g_settings_heading_font == NULL) {
-        g_settings_heading_font = CreateSettingsFont(hwnd, 11, FW_SEMIBOLD, FALSE);
+        g_settings_heading_font = CreateSettingsFont(hwnd, 11, FW_MEDIUM, FALSE);
     }
     if (g_settings_body_font == NULL) {
         g_settings_body_font = CreateSettingsFont(hwnd, 11, FW_NORMAL, FALSE);
     }
     if (g_settings_small_font == NULL) {
         g_settings_small_font = CreateSettingsFont(hwnd, 10, FW_NORMAL, FALSE);
+    }
+    if (g_settings_hint_font == NULL) {
+        g_settings_hint_font = CreateSettingsFont(hwnd, 9, FW_MEDIUM, FALSE);
     }
     if (g_settings_button_font == NULL) {
         g_settings_button_font = CreateSettingsFont(hwnd, 10, FW_NORMAL, FALSE);
@@ -773,7 +783,7 @@ static void LoadUiBitmapAssets(void) {
     LoadUiBitmapAsset(&g_ui_asset_logo_wordmark_header, L"logo_wordmark_header.png");
     LoadUiBitmapAsset(&g_ui_asset_logo_wordmark_brand, L"logo_wordmark_brand.png");
     LoadUiBitmapAsset(&g_ui_asset_logo_icon, L"logo_32.png");
-    LoadUiBitmapAsset(&g_ui_asset_logo_small, L"logo_40.png");
+    LoadUiBitmapAsset(&g_ui_asset_logo_small, L"logo_top_40.png");
     LoadUiBitmapAsset(&g_ui_asset_logo_large, L"logo_56.png");
 }
 
@@ -850,6 +860,7 @@ static BOOL DrawBitmapAsset(HDC dc, const UiBitmapAsset *asset, int x, int y, in
 
     old_bitmap = SelectObject(mem, asset->bitmap);
     old_mode = SetStretchBltMode(dc, HALFTONE);
+    SetBrushOrgEx(dc, 0, 0, NULL);
     drawn = AlphaBlend(dc, x, y, size, size, mem, 0, 0, (int)asset->width, (int)asset->height, blend);
     SetStretchBltMode(dc, old_mode);
     SelectObject(mem, old_bitmap);
@@ -875,6 +886,7 @@ static BOOL DrawBitmapAssetRect(HDC dc, const UiBitmapAsset *asset, int x, int y
 
     old_bitmap = SelectObject(mem, asset->bitmap);
     old_mode = SetStretchBltMode(dc, HALFTONE);
+    SetBrushOrgEx(dc, 0, 0, NULL);
     drawn = AlphaBlend(dc, x, y, width, height, mem, 0, 0, (int)asset->width, (int)asset->height, blend);
     SetStretchBltMode(dc, old_mode);
     SelectObject(mem, old_bitmap);
@@ -1113,7 +1125,7 @@ static BOOL IsSettingsCheckboxId(int id) {
 static BOOL IsCursorInCheckboxSquare(HWND control) {
     POINT pt;
     RECT rc;
-    RECT box_rect;
+    RECT toggle_rect;
 
     if (control == NULL || !GetCursorPos(&pt)) {
         return FALSE;
@@ -1122,12 +1134,12 @@ static BOOL IsCursorInCheckboxSquare(HWND control) {
     ScreenToClient(control, &pt);
     GetClientRect(control, &rc);
 
-    box_rect.left = rc.left + 8;
-    box_rect.top = rc.top + ((rc.bottom - rc.top) - 28) / 2;
-    box_rect.right = box_rect.left + 28;
-    box_rect.bottom = box_rect.top + 28;
+    toggle_rect.right = rc.right - 20;
+    toggle_rect.left = toggle_rect.right - UI_TOGGLE_WIDTH;
+    toggle_rect.top = rc.top + ((rc.bottom - rc.top) - UI_TOGGLE_HEIGHT) / 2;
+    toggle_rect.bottom = toggle_rect.top + UI_TOGGLE_HEIGHT;
 
-    return PtInRect(&box_rect, pt);
+    return PtInRect(&toggle_rect, pt);
 }
 
 static void ToggleSettingsCheckboxById(int id) {
@@ -1252,17 +1264,19 @@ static void DrawModernCheckbox(const DRAWITEMSTRUCT *draw_item) {
     RECT rc = draw_item->rcItem;
     RECT title_rect;
     RECT desc_rect;
-    RECT box_rect;
     RECT icon_circle;
+    RECT toggle_rect;
+    RECT knob_rect;
     wchar_t text[128];
     BOOL checked = IsSettingsCheckboxChecked(id);
-    BOOL selected = (draw_item->itemState & ODS_SELECTED) != 0;
     BOOL show_log_links = id == IDC_SETTINGS_LOGGING && ShouldShowDebugLogLinks();
     HBRUSH fill_brush = CreateSolidBrush(UI_CARD);
-    HBRUSH box_brush = CreateSolidBrush(checked ? (selected ? UI_ACCENT_DARK : UI_ACCENT) : RGB(255, 255, 255));
-    HPEN border_pen = CreatePen(PS_SOLID, 1, checked ? UI_ACCENT : UI_BORDER);
-    HBRUSH icon_brush = CreateSolidBrush(id == IDC_SETTINGS_LOGGING ? RGB(241, 245, 249) : UI_ACCENT_LIGHT);
-    HPEN icon_pen = CreatePen(PS_SOLID, 1, id == IDC_SETTINGS_LOGGING ? RGB(226, 232, 240) : RGB(203, 246, 241));
+    HBRUSH icon_brush = CreateSolidBrush(UI_ACCENT_LIGHT);
+    HPEN icon_pen = CreatePen(PS_SOLID, 1, RGB(203, 246, 241));
+    HBRUSH toggle_brush = CreateSolidBrush(checked ? UI_ACCENT : RGB(226, 232, 240));
+    HPEN toggle_pen = CreatePen(PS_SOLID, 1, checked ? UI_ACCENT_DARK : RGB(203, 213, 225));
+    HBRUSH knob_brush = CreateSolidBrush(RGB(255, 255, 255));
+    HPEN knob_pen = CreatePen(PS_SOLID, 1, RGB(226, 232, 240));
     HGDIOBJ old_brush;
     HGDIOBJ old_pen;
     int glyph_size = GetBadgeGlyphSize(GetCheckboxGlyph(id));
@@ -1271,37 +1285,7 @@ static void DrawModernCheckbox(const DRAWITEMSTRUCT *draw_item) {
 
     FillRect(dc, &rc, fill_brush);
 
-    box_rect.left = rc.left + 8;
-    box_rect.top = rc.top + ((rc.bottom - rc.top) - 28) / 2;
-    box_rect.right = box_rect.left + 28;
-    box_rect.bottom = box_rect.top + 28;
-
-    old_brush = SelectObject(dc, box_brush);
-    old_pen = SelectObject(dc, border_pen);
-    RoundRect(dc, box_rect.left, box_rect.top, box_rect.right, box_rect.bottom, 7, 7);
-    SelectObject(dc, old_pen);
-    SelectObject(dc, old_brush);
-
-    if (checked) {
-        DrawCheckMark(dc, box_rect.left + 4, box_rect.top + 5, RGB(255, 255, 255));
-    }
-
-    title_rect.left = rc.left + 56;
-    title_rect.top = rc.top + (show_log_links ? 4 : 6);
-    title_rect.right = rc.right - 72;
-    title_rect.bottom = title_rect.top + 22;
-    DrawTextWithFont(dc, text, title_rect, g_settings_heading_font, UI_TEXT, DT_LEFT | DT_SINGLELINE | DT_VCENTER);
-
-    desc_rect.left = title_rect.left;
-    desc_rect.top = title_rect.bottom - (show_log_links ? 4 : 1);
-    desc_rect.right = title_rect.right;
-    desc_rect.bottom = show_log_links ? desc_rect.top + 14 : rc.bottom - 4;
-    if (desc_rect.bottom < desc_rect.top + 12) {
-        desc_rect.bottom = desc_rect.top + 12;
-    }
-    DrawTextWithFont(dc, GetCheckboxDescription(id), desc_rect, g_settings_small_font, UI_MUTED, DT_LEFT | DT_SINGLELINE | DT_VCENTER | DT_END_ELLIPSIS);
-
-    icon_circle.left = rc.right - 60;
+    icon_circle.left = rc.left + 8;
     icon_circle.top = rc.top + ((rc.bottom - rc.top) - UI_BADGE_SIZE) / 2;
     icon_circle.right = icon_circle.left + UI_BADGE_SIZE;
     icon_circle.bottom = icon_circle.top + UI_BADGE_SIZE;
@@ -1313,15 +1297,52 @@ static void DrawModernCheckbox(const DRAWITEMSTRUCT *draw_item) {
     DrawGlyph(
         dc,
         GetCheckboxGlyph(id),
-        icon_circle.left + (UI_BADGE_SIZE - glyph_size) / 2,
-        icon_circle.top + (UI_BADGE_SIZE - glyph_size) / 2,
+        icon_circle.left + (UI_BADGE_SIZE - glyph_size) / 2 + GetBadgeGlyphOffsetX(GetCheckboxGlyph(id)),
+        icon_circle.top + (UI_BADGE_SIZE - glyph_size) / 2 + GetBadgeGlyphOffsetY(GetCheckboxGlyph(id)),
         glyph_size,
-        id == IDC_SETTINGS_LOGGING ? UI_ICON_MUTED : UI_ACCENT_DARK);
+        UI_ACCENT_DARK);
 
+    toggle_rect.right = rc.right - 20;
+    toggle_rect.left = toggle_rect.right - UI_TOGGLE_WIDTH;
+    toggle_rect.top = rc.top + ((rc.bottom - rc.top) - UI_TOGGLE_HEIGHT) / 2;
+    toggle_rect.bottom = toggle_rect.top + UI_TOGGLE_HEIGHT;
+    old_brush = SelectObject(dc, toggle_brush);
+    old_pen = SelectObject(dc, toggle_pen);
+    RoundRect(dc, toggle_rect.left, toggle_rect.top, toggle_rect.right, toggle_rect.bottom, UI_TOGGLE_HEIGHT, UI_TOGGLE_HEIGHT);
+    SelectObject(dc, old_pen);
+    SelectObject(dc, old_brush);
+
+    knob_rect.left = checked ? toggle_rect.right - 25 : toggle_rect.left + 3;
+    knob_rect.top = toggle_rect.top + 3;
+    knob_rect.right = knob_rect.left + 22;
+    knob_rect.bottom = knob_rect.top + 22;
+    old_brush = SelectObject(dc, knob_brush);
+    old_pen = SelectObject(dc, knob_pen);
+    Ellipse(dc, knob_rect.left, knob_rect.top, knob_rect.right, knob_rect.bottom);
+    SelectObject(dc, old_pen);
+    SelectObject(dc, old_brush);
+
+    title_rect.left = rc.left + 70;
+    title_rect.top = rc.top + (show_log_links ? 5 : 9);
+    title_rect.right = toggle_rect.left - 16;
+    title_rect.bottom = title_rect.top + 22;
+    DrawTextWithFont(dc, text, title_rect, g_settings_heading_font, UI_TEXT, DT_LEFT | DT_SINGLELINE | DT_VCENTER);
+
+    desc_rect.left = title_rect.left;
+    desc_rect.top = title_rect.bottom - (show_log_links ? 4 : 3);
+    desc_rect.right = title_rect.right;
+    desc_rect.bottom = show_log_links ? desc_rect.top + 14 : rc.bottom - 4;
+    if (desc_rect.bottom < desc_rect.top + 12) {
+        desc_rect.bottom = desc_rect.top + 12;
+    }
+    DrawTextWithFont(dc, GetCheckboxDescription(id), desc_rect, g_settings_small_font, UI_MUTED, DT_LEFT | DT_SINGLELINE | DT_VCENTER | DT_END_ELLIPSIS);
+
+    DeleteObject(knob_pen);
+    DeleteObject(knob_brush);
+    DeleteObject(toggle_pen);
+    DeleteObject(toggle_brush);
     DeleteObject(icon_pen);
     DeleteObject(icon_brush);
-    DeleteObject(border_pen);
-    DeleteObject(box_brush);
     DeleteObject(fill_brush);
 }
 
@@ -1344,6 +1365,8 @@ static void DrawModernButton(const DRAWITEMSTRUCT *draw_item) {
     HPEN border_pen;
     HGDIOBJ old_brush;
     HGDIOBJ old_pen;
+
+    FillRect(dc, &rc, g_settings_card_brush != NULL ? g_settings_card_brush : GetSysColorBrush(COLOR_WINDOW));
 
     if (primary) {
         fill = selected ? UI_ACCENT_DARK : UI_ACCENT;
@@ -1450,6 +1473,67 @@ static void DrawChevron(HDC dc, int x, int y, COLORREF color) {
     StrokeLine(dc, x + 5, y + 5, x + 10, y, color, 1);
 }
 
+static BOOL IsLanguageMenuItemId(UINT item_id) {
+    return item_id == SETTINGS_LANGUAGE_MENU_EN || item_id == SETTINGS_LANGUAGE_MENU_UK;
+}
+
+static const wchar_t *GetLanguageMenuItemText(UINT item_id) {
+    return item_id == SETTINGS_LANGUAGE_MENU_UK
+        ? GetUiText(TXT_LANGUAGE_UKRAINIAN)
+        : GetUiText(TXT_LANGUAGE_ENGLISH);
+}
+
+static void DrawLanguageMenuItem(const DRAWITEMSTRUCT *draw_item) {
+    HDC dc = draw_item->hDC;
+    RECT rc = draw_item->rcItem;
+    RECT hover_rect = rc;
+    RECT text_rect = rc;
+    BOOL selected = (draw_item->itemState & ODS_SELECTED) != 0;
+    UINT checked_item_id = (UINT)(g_pending_settings.ui_language == UI_LANGUAGE_UK
+        ? SETTINGS_LANGUAGE_MENU_UK
+        : SETTINGS_LANGUAGE_MENU_EN);
+    BOOL checked = draw_item->itemID == checked_item_id;
+    HBRUSH background_brush = CreateSolidBrush(UI_CARD);
+    HBRUSH hover_brush = CreateSolidBrush(RGB(244, 247, 251));
+    HPEN null_pen = (HPEN)GetStockObject(NULL_PEN);
+    HGDIOBJ old_brush;
+    HGDIOBJ old_pen;
+
+    FillRect(dc, &rc, background_brush);
+
+    if (selected) {
+        InflateRect(&hover_rect, -4, -3);
+        old_brush = SelectObject(dc, hover_brush);
+        old_pen = SelectObject(dc, null_pen);
+        RoundRect(dc, hover_rect.left, hover_rect.top, hover_rect.right, hover_rect.bottom, 7, 7);
+        SelectObject(dc, old_pen);
+        SelectObject(dc, old_brush);
+    }
+
+    if (checked) {
+        HPEN check_pen = CreatePen(PS_SOLID, 1, UI_TEXT);
+        old_pen = SelectObject(dc, check_pen);
+        MoveToEx(dc, rc.left + 13, rc.top + 15, NULL);
+        LineTo(dc, rc.left + 16, rc.top + 18);
+        LineTo(dc, rc.left + 22, rc.top + 11);
+        SelectObject(dc, old_pen);
+        DeleteObject(check_pen);
+    }
+
+    text_rect.left = rc.left + 38;
+    text_rect.right = rc.right - 12;
+    DrawTextWithFont(
+        dc,
+        GetLanguageMenuItemText(draw_item->itemID),
+        text_rect,
+        g_settings_button_font,
+        UI_TEXT,
+        DT_LEFT | DT_SINGLELINE | DT_VCENTER | DT_END_ELLIPSIS);
+
+    DeleteObject(hover_brush);
+    DeleteObject(background_brush);
+}
+
 static void DrawLanguageSelector(const DRAWITEMSTRUCT *draw_item) {
     HDC dc = draw_item->hDC;
     RECT rc = draw_item->rcItem;
@@ -1462,6 +1546,8 @@ static void DrawLanguageSelector(const DRAWITEMSTRUCT *draw_item) {
     HGDIOBJ old_pen;
 
     GetWindowTextW(draw_item->hwndItem, text, sizeof(text) / sizeof(text[0]));
+
+    FillRect(dc, &rc, g_settings_card_brush != NULL ? g_settings_card_brush : GetSysColorBrush(COLOR_WINDOW));
 
     old_brush = SelectObject(dc, fill_brush);
     old_pen = SelectObject(dc, border_pen);
@@ -1489,6 +1575,8 @@ static void DrawHotkeyValue(const DRAWITEMSTRUCT *draw_item) {
     HGDIOBJ old_pen;
 
     GetWindowTextW(draw_item->hwndItem, text, sizeof(text) / sizeof(text[0]));
+
+    FillRect(dc, &rc, g_settings_card_brush != NULL ? g_settings_card_brush : GetSysColorBrush(COLOR_WINDOW));
 
     old_brush = SelectObject(dc, fill_brush);
     old_pen = SelectObject(dc, border_pen);
@@ -1551,22 +1639,53 @@ static void DrawCwitcherWord(HDC dc, int x, int y, HFONT font, COLORREF accent, 
     }
 }
 
+static void DrawCwMonogram(HDC dc, RECT rect);
+
 static int DrawTopWordmark(HDC dc, int x, int y) {
+    RECT text_rect;
     SIZE text_size = { 0 };
     HFONT old_font = NULL;
+    int logo_size = 40;
+    int gap = 12;
+    int group_width;
+    int logo_left;
+    int logo_top = y - 2;
+    int text_left;
+    const wchar_t *title = GetActiveUiLanguage() == UI_LANGUAGE_UK ? L"Налаштування" : L"Settings";
+    (void)x;
 
-    if (g_ui_asset_logo_wordmark_header.bitmap != NULL) {
-        DrawBitmapAssetRect(dc, &g_ui_asset_logo_wordmark_header, x, y - 6, 156, 48);
-        return x + 156;
+    if (g_settings_title_font != NULL) {
+        old_font = (HFONT)SelectObject(dc, g_settings_title_font);
     }
-
-    DrawCwitcherWord(dc, x, y + 1, g_settings_title_font, UI_ACCENT, UI_TEXT);
-    old_font = (HFONT)SelectObject(dc, g_settings_title_font);
-    GetTextExtentPoint32W(dc, L"Cwitcher", 8, &text_size);
+    GetTextExtentPoint32W(dc, title, (int)wcslen(title), &text_size);
     if (old_font != NULL) {
         SelectObject(dc, old_font);
     }
-    return x + text_size.cx;
+
+    group_width = logo_size + gap + text_size.cx;
+    logo_left = (SETTINGS_CLIENT_WIDTH - group_width) / 2;
+    text_left = logo_left + logo_size + gap;
+
+    if (g_ui_asset_logo_small.bitmap != NULL) {
+        DrawBitmapAssetRect(dc, &g_ui_asset_logo_small, logo_left, logo_top, logo_size, logo_size);
+    } else {
+        RECT fallback = { logo_left, logo_top, logo_left + logo_size, logo_top + logo_size };
+        DrawCwMonogram(dc, fallback);
+    }
+
+    text_rect.left = text_left;
+    text_rect.top = logo_top;
+    text_rect.right = SETTINGS_CLIENT_WIDTH - UI_MARGIN;
+    text_rect.bottom = logo_top + logo_size;
+    DrawTextWithFont(
+        dc,
+        title,
+        text_rect,
+        g_settings_title_font,
+        UI_TEXT,
+        DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS);
+
+    return text_left + text_size.cx;
 }
 
 static void DrawCwMonogram(HDC dc, RECT rect) {
@@ -1688,13 +1807,13 @@ static void DrawHotkeyCardText(HDC dc, int top, const wchar_t *title, const wcha
     DrawGlyphBadge(dc, UI_ICON_LEFT, top + 22, UI_GLYPH_KEYBOARD);
 
     title_rect.left = UI_TEXT_LEFT;
-    title_rect.top = top + 14;
+    title_rect.top = top + 18;
     title_rect.right = UI_CARD_RIGHT - 28;
     title_rect.bottom = top + 42;
     DrawTextWithFont(dc, title, title_rect, g_settings_heading_font, UI_TEXT, DT_LEFT | DT_SINGLELINE | DT_END_ELLIPSIS);
 
     desc_rect.left = title_rect.left;
-    desc_rect.top = top + 40;
+    desc_rect.top = top + 42;
     desc_rect.right = title_rect.right;
     desc_rect.bottom = top + 62;
     DrawTextWithFont(dc, description, desc_rect, g_settings_small_font, UI_MUTED, DT_LEFT | DT_SINGLELINE | DT_END_ELLIPSIS);
@@ -1703,48 +1822,42 @@ static void DrawHotkeyCardText(HDC dc, int top, const wchar_t *title, const wcha
 static void DrawSettingsChrome(HWND hwnd, HDC dc) {
     RECT rc;
     RECT text_rect;
-    int wordmark_right;
 
     GetClientRect(hwnd, &rc);
     FillRect(dc, &rc, g_settings_background_brush != NULL ? g_settings_background_brush : GetSysColorBrush(COLOR_WINDOW));
 
-    wordmark_right = DrawTopWordmark(dc, UI_MARGIN, 21);
-    text_rect.left = wordmark_right + 12;
-    text_rect.top = 28;
-    text_rect.right = SETTINGS_CLIENT_WIDTH - UI_MARGIN;
-    text_rect.bottom = 52;
+    (void)DrawTopWordmark(dc, UI_MARGIN, 21);
+#if 0
     DrawTextWithFont(dc, GetActiveUiLanguage() == UI_LANGUAGE_UK ? L"Налаштування" : L"Settings", text_rect, g_settings_body_font, RGB(82, 92, 108), DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS);
 
-    DrawRoundedCard(dc, UI_CARD_LEFT, 74, UI_CARD_RIGHT, 194, UI_CARD_RADIUS);
-    StrokeLine(dc, UI_CARD_LEFT + 1, 134, UI_CARD_RIGHT - 1, 134, UI_BORDER, 1);
-    DrawRoundedCard(dc, UI_CARD_LEFT, 250, UI_CARD_RIGHT, 486, UI_CARD_RADIUS);
-    StrokeLine(dc, UI_CARD_LEFT + 24, 370, UI_CARD_RIGHT - 24, 370, UI_BORDER, 1);
-    DrawRoundedCard(dc, UI_CARD_LEFT, 494, UI_CARD_RIGHT, 550, UI_CARD_RADIUS);
-    DrawRoundedCard(dc, UI_CARD_LEFT, 558, UI_CARD_RIGHT, 682, UI_CARD_RADIUS);
-    DrawRoundedCard(dc, UI_CARD_LEFT, 690, UI_CARD_RIGHT, 748, UI_CARD_RADIUS);
+#endif
+    DrawRoundedCard(dc, UI_CARD_LEFT, 68, UI_CARD_RIGHT, 304, UI_CARD_RADIUS);
+    DrawRoundedCard(dc, UI_CARD_LEFT, 312, UI_CARD_RIGHT, 598, UI_CARD_RADIUS);
+    StrokeLine(dc, UI_CARD_LEFT + 24, 432, UI_CARD_RIGHT - 24, 432, UI_BORDER, 1);
+    DrawRoundedCard(dc, UI_CARD_LEFT, 606, UI_CARD_RIGHT, 730, UI_CARD_RADIUS);
 
-    DrawGlyphBadge(dc, UI_ICON_LEFT, 202, UI_GLYPH_GLOBE);
+    DrawGlyphBadge(dc, UI_ICON_LEFT, 252, UI_GLYPH_GLOBE);
     text_rect.left = UI_TEXT_LEFT;
-    text_rect.top = 204;
+    text_rect.top = 254;
     text_rect.right = 360;
-    text_rect.bottom = 240;
+    text_rect.bottom = 290;
     DrawTextWithFont(dc, GetUiText(TXT_LABEL_LANGUAGE), text_rect, g_settings_heading_font, UI_TEXT, DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS);
 
-    DrawHotkeyCardText(dc, 250, GetUiText(TXT_GROUP_SELECTED), GetUiText(TXT_DESC_SELECTED));
-    DrawHotkeyCardText(dc, 364, GetUiText(TXT_GROUP_LASTWORD), GetUiText(TXT_DESC_LASTWORD));
+    DrawHotkeyCardText(dc, 312, GetUiText(TXT_GROUP_SELECTED), GetUiText(TXT_DESC_SELECTED));
+    DrawHotkeyCardText(dc, 420, GetUiText(TXT_GROUP_LASTWORD), GetUiText(TXT_DESC_LASTWORD));
 
-    DrawGlyphBadge(dc, UI_ICON_LEFT, 501, UI_GLYPH_INFO);
+    DrawGlyph(dc, UI_GLYPH_INFO, 66, 557, 20, UI_ACCENT_DARK);
 
     text_rect.left = UI_MARGIN;
-    text_rect.top = 762;
+    text_rect.top = 734;
     text_rect.right = 220;
     text_rect.bottom = SETTINGS_CLIENT_HEIGHT - 5;
     DrawTextWithFont(dc, GetUiText(TXT_VERSION_LABEL), text_rect, g_settings_small_font, RGB(166, 176, 191), DT_LEFT | DT_BOTTOM | DT_SINGLELINE | DT_END_ELLIPSIS);
 
     if (g_icon_github != NULL) {
-        DrawIconEx(dc, 60, 643, g_icon_github, 20, 20, 0, NULL, DI_NORMAL);
+        DrawIconEx(dc, 60, 691, g_icon_github, 20, 20, 0, NULL, DI_NORMAL);
     } else {
-        DrawGlyph(dc, UI_GLYPH_GITHUB, 60, 643, 20, RGB(17, 24, 39));
+        DrawGlyph(dc, UI_GLYPH_GITHUB, 60, 691, 20, RGB(17, 24, 39));
     }
 }
 
@@ -1848,14 +1961,14 @@ static void UpdateDebugLogLinkControls(void) {
         }
 
         path_width = min(path_size.cx + 4, 360);
-        delete_left = 100 + path_width + 10;
+        delete_left = 126 + path_width + 10;
         if (g_settings_controls.log_path_link != NULL) {
-            MoveWindow(g_settings_controls.log_path_link, 100, 726, path_width, 18, TRUE);
+            MoveWindow(g_settings_controls.log_path_link, 126, 225, path_width, 18, TRUE);
             SetWindowPos(g_settings_controls.log_path_link, HWND_TOP, 0, 0, 0, 0,
                 SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
         }
         if (g_settings_controls.log_delete_link != NULL) {
-            MoveWindow(g_settings_controls.log_delete_link, delete_left, 726, 80, 18, TRUE);
+            MoveWindow(g_settings_controls.log_delete_link, delete_left, 225, 80, 18, TRUE);
             SetWindowPos(g_settings_controls.log_delete_link, HWND_TOP, 0, 0, 0, 0,
                 SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
         }
@@ -2060,13 +2173,13 @@ static void ShowLanguagePopupMenu(void) {
     }
 
     AppendMenuW(menu,
-        MF_STRING | (g_pending_settings.ui_language == UI_LANGUAGE_EN ? MF_CHECKED : 0),
+        MF_OWNERDRAW | (g_pending_settings.ui_language == UI_LANGUAGE_EN ? MF_CHECKED : 0),
         SETTINGS_LANGUAGE_MENU_EN,
-        GetUiText(TXT_LANGUAGE_ENGLISH));
+        NULL);
     AppendMenuW(menu,
-        MF_STRING | (g_pending_settings.ui_language == UI_LANGUAGE_UK ? MF_CHECKED : 0),
+        MF_OWNERDRAW | (g_pending_settings.ui_language == UI_LANGUAGE_UK ? MF_CHECKED : 0),
         SETTINGS_LANGUAGE_MENU_UK,
-        GetUiText(TXT_LANGUAGE_UKRAINIAN));
+        NULL);
 
     GetWindowRect(g_settings_controls.language_combo, &rect);
     SetForegroundWindow(g_settings_window);
@@ -2137,85 +2250,85 @@ static void CreateSettingsControls(HWND hwnd) {
     HWND control;
 
     control = CreateWindowExW(0, L"STATIC", L"", WS_CHILD | WS_VISIBLE | SS_OWNERDRAW | SS_NOTIFY,
-        44, 84, 632, 48, hwnd, (HMENU)(INT_PTR)IDC_SETTINGS_SOUND, g_instance, NULL);
+        44, 78, 592, 50, hwnd, (HMENU)(INT_PTR)IDC_SETTINGS_SOUND, g_instance, NULL);
     g_settings_controls.sound_checkbox = control;
     ApplyButtonFont(control);
 
     control = CreateWindowExW(0, L"STATIC", L"", WS_CHILD | WS_VISIBLE | SS_OWNERDRAW | SS_NOTIFY,
-        44, 140, 632, 48, hwnd, (HMENU)(INT_PTR)IDC_SETTINGS_AUTOSTART, g_instance, NULL);
+        44, 133, 592, 50, hwnd, (HMENU)(INT_PTR)IDC_SETTINGS_AUTOSTART, g_instance, NULL);
     g_settings_controls.autostart_checkbox = control;
     ApplyButtonFont(control);
 
     control = CreateWindowExW(0, L"BUTTON", L"", WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_OWNERDRAW,
-        390, 200, 302, 44, hwnd, (HMENU)(INT_PTR)IDC_SETTINGS_LANGUAGE_COMBO, g_instance, NULL);
+        460, 251, 176, 44, hwnd, (HMENU)(INT_PTR)IDC_SETTINGS_LANGUAGE_COMBO, g_instance, NULL);
     g_settings_controls.language_combo = control;
     ApplyDefaultGuiFont(control);
 
     control = CreateWindowExW(0, L"STATIC", L"", WS_CHILD | WS_VISIBLE | SS_OWNERDRAW,
-        64, 324, 270, UI_HOTKEY_CONTROL_HEIGHT, hwnd, (HMENU)(INT_PTR)IDC_SELECTED_VALUE, g_instance, NULL);
+        64, 386, 230, UI_HOTKEY_CONTROL_HEIGHT, hwnd, (HMENU)(INT_PTR)IDC_SELECTED_VALUE, g_instance, NULL);
     g_settings_controls.selected_value = control;
     ApplyDefaultGuiFont(control);
 
     control = CreateWindowExW(0, L"BUTTON", L"", WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_OWNERDRAW,
-        348, 324, 112, UI_HOTKEY_CONTROL_HEIGHT, hwnd, (HMENU)(INT_PTR)IDC_SELECTED_RECORD, g_instance, NULL);
+        308, 386, 112, UI_HOTKEY_CONTROL_HEIGHT, hwnd, (HMENU)(INT_PTR)IDC_SELECTED_RECORD, g_instance, NULL);
     ApplyButtonFont(control);
 
     control = CreateWindowExW(0, L"BUTTON", L"", WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_OWNERDRAW,
-        466, 324, 96, UI_HOTKEY_CONTROL_HEIGHT, hwnd, (HMENU)(INT_PTR)IDC_SELECTED_CLEAR, g_instance, NULL);
+        426, 386, 96, UI_HOTKEY_CONTROL_HEIGHT, hwnd, (HMENU)(INT_PTR)IDC_SELECTED_CLEAR, g_instance, NULL);
     ApplyButtonFont(control);
 
     control = CreateWindowExW(0, L"BUTTON", L"", WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_OWNERDRAW,
-        568, 324, 104, UI_HOTKEY_CONTROL_HEIGHT, hwnd, (HMENU)(INT_PTR)IDC_SELECTED_RESET, g_instance, NULL);
+        528, 386, 104, UI_HOTKEY_CONTROL_HEIGHT, hwnd, (HMENU)(INT_PTR)IDC_SELECTED_RESET, g_instance, NULL);
     ApplyButtonFont(control);
 
     control = CreateWindowExW(0, L"STATIC", L"", WS_CHILD | WS_VISIBLE | SS_OWNERDRAW,
-        64, 432, 270, UI_HOTKEY_CONTROL_HEIGHT, hwnd, (HMENU)(INT_PTR)IDC_LASTWORD_VALUE, g_instance, NULL);
+        64, 494, 230, UI_HOTKEY_CONTROL_HEIGHT, hwnd, (HMENU)(INT_PTR)IDC_LASTWORD_VALUE, g_instance, NULL);
     g_settings_controls.lastword_value = control;
     ApplyDefaultGuiFont(control);
 
     control = CreateWindowExW(0, L"BUTTON", L"", WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_OWNERDRAW,
-        348, 432, 112, UI_HOTKEY_CONTROL_HEIGHT, hwnd, (HMENU)(INT_PTR)IDC_LASTWORD_RECORD, g_instance, NULL);
+        308, 494, 112, UI_HOTKEY_CONTROL_HEIGHT, hwnd, (HMENU)(INT_PTR)IDC_LASTWORD_RECORD, g_instance, NULL);
     ApplyButtonFont(control);
 
     control = CreateWindowExW(0, L"BUTTON", L"", WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_OWNERDRAW,
-        466, 432, 96, UI_HOTKEY_CONTROL_HEIGHT, hwnd, (HMENU)(INT_PTR)IDC_LASTWORD_CLEAR, g_instance, NULL);
+        426, 494, 96, UI_HOTKEY_CONTROL_HEIGHT, hwnd, (HMENU)(INT_PTR)IDC_LASTWORD_CLEAR, g_instance, NULL);
     ApplyButtonFont(control);
 
     control = CreateWindowExW(0, L"BUTTON", L"", WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_OWNERDRAW,
-        568, 432, 104, UI_HOTKEY_CONTROL_HEIGHT, hwnd, (HMENU)(INT_PTR)IDC_LASTWORD_RESET, g_instance, NULL);
+        528, 494, 104, UI_HOTKEY_CONTROL_HEIGHT, hwnd, (HMENU)(INT_PTR)IDC_LASTWORD_RESET, g_instance, NULL);
     ApplyButtonFont(control);
 
     control = CreateWindowExW(0, L"STATIC", L"", WS_CHILD | WS_VISIBLE | SS_LEFT | SS_CENTERIMAGE,
-        106, 512, 552, 24, hwnd, (HMENU)(INT_PTR)IDC_SETTINGS_STATUS, g_instance, NULL);
+        96, 555, 522, 24, hwnd, (HMENU)(INT_PTR)IDC_SETTINGS_STATUS, g_instance, NULL);
     g_settings_controls.status_value = control;
-    ApplyFont(control, g_settings_small_font);
+    ApplyFont(control, g_settings_hint_font);
 
     control = CreateWindowExW(0, L"BUTTON", L"", WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_OWNERDRAW,
-        596, 586, UI_STORE_BUTTON_SIZE, UI_STORE_BUTTON_SIZE, hwnd, (HMENU)(INT_PTR)IDC_SETTINGS_STORE, g_instance, NULL);
+        556, 634, UI_STORE_BUTTON_SIZE, UI_STORE_BUTTON_SIZE, hwnd, (HMENU)(INT_PTR)IDC_SETTINGS_STORE, g_instance, NULL);
     g_settings_controls.store_button = control;
     ApplyButtonFont(control);
 
     control = CreateWindowExW(0, L"STATIC", L"", WS_CHILD | WS_VISIBLE | SS_OWNERDRAW,
-        60, 572, 430, 72, hwnd, (HMENU)(INT_PTR)IDC_SETTINGS_BRAND, g_instance, NULL);
+        60, 620, 430, 72, hwnd, (HMENU)(INT_PTR)IDC_SETTINGS_BRAND, g_instance, NULL);
     g_settings_controls.brand_logo = control;
 
     control = CreateWindowExW(0, L"STATIC", L"", WS_CHILD | WS_VISIBLE | SS_LEFT | SS_NOTIFY,
-        88, 643, 356, 20, hwnd, (HMENU)(INT_PTR)IDC_SETTINGS_GITHUB, g_instance, NULL);
+        88, 691, 356, 20, hwnd, (HMENU)(INT_PTR)IDC_SETTINGS_GITHUB, g_instance, NULL);
     g_settings_controls.github_link = control;
     ApplyLinkFont(control);
 
     control = CreateWindowExW(0, L"STATIC", L"", WS_CHILD | WS_VISIBLE | SS_OWNERDRAW | SS_NOTIFY,
-        44, 692, 632, 46, hwnd, (HMENU)(INT_PTR)IDC_SETTINGS_LOGGING, g_instance, NULL);
+        44, 188, 592, 50, hwnd, (HMENU)(INT_PTR)IDC_SETTINGS_LOGGING, g_instance, NULL);
     g_settings_controls.logging_checkbox = control;
     ApplyButtonFont(control);
 
     control = CreateWindowExW(WS_EX_TRANSPARENT, L"STATIC", L"", WS_CHILD | SS_LEFT | SS_NOTIFY,
-        100, 726, 360, 18, hwnd, (HMENU)(INT_PTR)IDC_SETTINGS_LOG_PATH, g_instance, NULL);
+        126, 225, 360, 18, hwnd, (HMENU)(INT_PTR)IDC_SETTINGS_LOG_PATH, g_instance, NULL);
     g_settings_controls.log_path_link = control;
     ApplyLinkFont(control);
 
     control = CreateWindowExW(WS_EX_TRANSPARENT, L"STATIC", L"", WS_CHILD | SS_LEFT | SS_NOTIFY,
-        470, 726, 80, 18, hwnd, (HMENU)(INT_PTR)IDC_SETTINGS_LOG_DELETE, g_instance, NULL);
+        496, 225, 80, 18, hwnd, (HMENU)(INT_PTR)IDC_SETTINGS_LOG_DELETE, g_instance, NULL);
     g_settings_controls.log_delete_link = control;
     ApplyLinkFont(control);
 }
@@ -2402,7 +2515,7 @@ static LRESULT CALLBACK SettingsWindowProc(HWND hwnd, UINT message, WPARAM wPara
         }
 
         if (IsSettingsValueControl(control)) {
-            SetTextColor(dc, control == g_settings_controls.status_value ? UI_MUTED : UI_TEXT);
+            SetTextColor(dc, control == g_settings_controls.status_value ? UI_ACCENT_DARK : UI_TEXT);
             return (LRESULT)(g_settings_card_brush != NULL ? g_settings_card_brush : GetSysColorBrush(COLOR_WINDOW));
         }
         break;
@@ -2411,6 +2524,11 @@ static LRESULT CALLBACK SettingsWindowProc(HWND hwnd, UINT message, WPARAM wPara
     case WM_MEASUREITEM:
     {
         MEASUREITEMSTRUCT *measure = (MEASUREITEMSTRUCT *)lParam;
+        if (measure != NULL && measure->CtlType == ODT_MENU && IsLanguageMenuItemId(measure->itemID)) {
+            measure->itemWidth = UI_LANGUAGE_MENU_WIDTH;
+            measure->itemHeight = UI_LANGUAGE_MENU_ITEM_HEIGHT;
+            return TRUE;
+        }
         if (measure != NULL && measure->CtlID == IDC_SETTINGS_LANGUAGE_COMBO) {
             measure->itemHeight = 30;
             return TRUE;
@@ -2419,6 +2537,13 @@ static LRESULT CALLBACK SettingsWindowProc(HWND hwnd, UINT message, WPARAM wPara
     }
 
     case WM_DRAWITEM:
+    {
+        const DRAWITEMSTRUCT *draw_item = (const DRAWITEMSTRUCT *)lParam;
+        if (draw_item != NULL && draw_item->CtlType == ODT_MENU && IsLanguageMenuItemId(draw_item->itemID)) {
+            DrawLanguageMenuItem(draw_item);
+            return TRUE;
+        }
+    }
         if (wParam == IDC_SETTINGS_BRAND) {
             DrawBrandLogo((const DRAWITEMSTRUCT *)lParam);
             return TRUE;

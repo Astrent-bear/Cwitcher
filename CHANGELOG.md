@@ -4,6 +4,28 @@
 
 ---
 
+## v0.5.0 - redesigned settings UI
+
+### Українською
+
+- Перероблено вікно налаштувань: компактніша ширина, центрований заголовок, оновлений бренд-блок і вирівняні секції.
+- Замінено старі чекбокси на сучасні перемикачі для звуку, автозапуску та debug log.
+- Об'єднано перемикачі та вибір мови в один верхній блок.
+- Оновлено блок гарячих клавіш: компактніші поля, узгоджені кнопки та менша підказка всередині секції.
+- Поліпшено відображення іконок, bitmap-згладжування, скруглення контролів і власний стиль випадаючого меню мови.
+- Оновлено відображення версії до `0.5.0`.
+
+### English
+
+- Redesigned the settings window with a narrower layout, centered header, refreshed brand block, and better section alignment.
+- Replaced old checkboxes with modern toggles for sound, autostart, and debug log.
+- Grouped toggles and interface language selection into one top settings block.
+- Refined the hotkey section with shorter value fields, aligned buttons, and a smaller in-section hint.
+- Improved icon rendering, bitmap smoothing, rounded control backgrounds, and the custom language dropdown menu style.
+- Updated the displayed app version to `0.5.0`.
+
+---
+
 ## v0.3.0 - input priority and clipboard safety
 
 ### Українською
