@@ -1,4 +1,4 @@
-# Contributing to KeyboardSwitcherC
+# Contributing to Cwitcher
 
 Thanks for taking the time to contribute.
 
@@ -18,7 +18,7 @@ Thanks for taking the time to contribute.
 
 ### Build
 
-Open `KeyboardSwitcherC.sln` in Visual Studio and build `Debug x64` or `Release x64`.
+Open `Cwitcher.sln` in Visual Studio and build `Debug x64` or `Release x64`.
 
 Or use:
 

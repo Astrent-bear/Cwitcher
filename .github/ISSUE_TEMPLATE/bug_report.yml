@@ -1,5 +1,5 @@
 name: Bug report
-description: Report a reproducible problem in KeyboardSwitcherC
+description: Report a reproducible problem in Cwitcher
 title: "[Bug]: "
 labels:
   - bug

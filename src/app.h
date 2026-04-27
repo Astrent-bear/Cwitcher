@@ -14,9 +14,13 @@
 #include <stdarg.h>
 #include "resource.h"
 
-#define APP_NAME L"KeyboardSwitcherC"
-#define APP_CLASS_NAME L"KeyboardSwitcherCWindow"
-#define SETTINGS_CLASS_NAME L"KeyboardSwitcherCSettingsWindow"
+#define APP_NAME L"Cwitcher"
+#define APP_SETTINGS_DIR L"Cwitcher"
+#define APP_LEGACY_SETTINGS_DIR L"KeyboardSwitcherC"
+#define APP_LOG_FILE_NAME L"cwitcher.log"
+#define APP_LEGACY_LOG_FILE_NAME L"keyboard-switcher-c.log"
+#define APP_CLASS_NAME L"CwitcherWindow"
+#define SETTINGS_CLASS_NAME L"CwitcherSettingsWindow"
 #define TRAY_UID 1001
 #define TIMER_LAYOUT 2001
 #define WMAPP_TRAYICON (WM_APP + 1)
@@ -67,9 +71,9 @@
 #define IDC_SETTINGS_LOG_DELETE 41024
 
 #ifdef _DEBUG
-#define APP_VERSION L"0.5.0-debug"
+#define APP_VERSION L"0.6.0-debug"
 #else
-#define APP_VERSION L"0.5.0"
+#define APP_VERSION L"0.6.0"
 #endif
 
 #define DEFAULT_SELECTED_HOTKEY_VK VK_PAUSE_KEY

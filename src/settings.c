@@ -3,7 +3,7 @@
 static const int SETTINGS_SCHEMA_VERSION = 3;
 static const wchar_t *AUTOSTART_REGISTRY_PATH = L"Software\\Microsoft\\Windows\\CurrentVersion\\Run";
 
-static BOOL BuildSettingsDirectoryPath(wchar_t *path, size_t capacity) {
+static BOOL BuildAppDataChildPath(const wchar_t *directory_name, wchar_t *path, size_t capacity) {
     DWORD length;
 
     length = GetEnvironmentVariableW(L"APPDATA", path, (DWORD)capacity);
@@ -16,29 +16,55 @@ static BOOL BuildSettingsDirectoryPath(wchar_t *path, size_t capacity) {
         if (slash != NULL) {
             *slash = L'\0';
         }
-    } else {
-        if (FAILED(StringCchCatW(path, capacity, L"\\KeyboardSwitcherC"))) {
-            return FALSE;
-        }
-        CreateDirectoryW(path, NULL);
+    }
+
+    if (FAILED(StringCchCatW(path, capacity, L"\\"))) {
+        return FALSE;
+    }
+    if (FAILED(StringCchCatW(path, capacity, directory_name))) {
+        return FALSE;
     }
 
     return TRUE;
 }
 
+static BOOL BuildSettingsDirectoryPath(wchar_t *path, size_t capacity) {
+    if (!BuildAppDataChildPath(APP_SETTINGS_DIR, path, capacity)) {
+        return FALSE;
+    }
+
+    CreateDirectoryW(path, NULL);
+    return TRUE;
+}
+
+static BOOL BuildLegacySettingsFilePath(wchar_t *path, size_t capacity) {
+    if (!BuildAppDataChildPath(APP_LEGACY_SETTINGS_DIR, path, capacity)) {
+        return FALSE;
+    }
+
+    return SUCCEEDED(StringCchCatW(path, capacity, L"\\settings.ini"));
+}
+
 static BOOL BuildSettingsFilePath(wchar_t *path, size_t capacity) {
+    wchar_t legacy_path[MAX_PATH];
+    DWORD attributes;
+
     if (!BuildSettingsDirectoryPath(path, capacity)) {
         return FALSE;
     }
 
-    if (wcsstr(path, L"KeyboardSwitcherC") == NULL) {
-        if (FAILED(StringCchCatW(path, capacity, L"\\KeyboardSwitcherC"))) {
-            return FALSE;
-        }
-        CreateDirectoryW(path, NULL);
+    if (FAILED(StringCchCatW(path, capacity, L"\\settings.ini"))) {
+        return FALSE;
     }
 
-    return SUCCEEDED(StringCchCatW(path, capacity, L"\\settings.ini"));
+    attributes = GetFileAttributesW(path);
+    if (attributes == INVALID_FILE_ATTRIBUTES
+        && BuildLegacySettingsFilePath(legacy_path, sizeof(legacy_path) / sizeof(legacy_path[0]))
+        && GetFileAttributesW(legacy_path) != INVALID_FILE_ATTRIBUTES) {
+        CopyFileW(legacy_path, path, TRUE);
+    }
+
+    return TRUE;
 }
 
 static UiLanguage GetDefaultUiLanguage(void) {
@@ -270,7 +296,7 @@ BOOL BuildDebugLogFilePath(wchar_t *path, size_t capacity) {
         slash[1] = L'\0';
     }
 
-    return SUCCEEDED(StringCchCatW(path, capacity, L"keyboard-switcher-c.log"));
+    return SUCCEEDED(StringCchCatW(path, capacity, APP_LOG_FILE_NAME));
 }
 
 BOOL DebugLogFileExists(void) {
@@ -355,6 +381,10 @@ BOOL IsAutostartEnabled(void) {
     }
 
     result = RegQueryValueExW(key, APP_NAME, NULL, &type, (LPBYTE)value, &size);
+    if (result != ERROR_SUCCESS) {
+        size = sizeof(value);
+        result = RegQueryValueExW(key, APP_LEGACY_SETTINGS_DIR, NULL, &type, (LPBYTE)value, &size);
+    }
     RegCloseKey(key);
     return result == ERROR_SUCCESS && type == REG_SZ && value[0] != L'\0';
 }
@@ -376,6 +406,7 @@ BOOL SetAutostartEnabled(BOOL enabled) {
             return FALSE;
         }
 
+        RegDeleteValueW(key, APP_LEGACY_SETTINGS_DIR);
         result = RegSetValueExW(key, APP_NAME, 0, REG_SZ,
             (const BYTE *)command, (DWORD)((wcslen(command) + 1) * sizeof(wchar_t)));
     } else {
@@ -383,6 +414,7 @@ BOOL SetAutostartEnabled(BOOL enabled) {
         if (result == ERROR_FILE_NOT_FOUND) {
             result = ERROR_SUCCESS;
         }
+        RegDeleteValueW(key, APP_LEGACY_SETTINGS_DIR);
     }
 
     RegCloseKey(key);

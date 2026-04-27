@@ -26,4 +26,4 @@ dist/
 *.exp
 
 # Local settings / generated files
-keyboard-switcher-c.log
+cwitcher.log

@@ -14,9 +14,9 @@
     <VCProjectVersion>18.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
     <ProjectGuid>{9F7D8D0A-5EAC-4E4D-9E6C-1A1E6A9156B8}</ProjectGuid>
-    <RootNamespace>KeyboardSwitcherC</RootNamespace>
+    <RootNamespace>Cwitcher</RootNamespace>
     <WindowsTargetPlatformVersion>10.0.26100.0</WindowsTargetPlatformVersion>
-    <ProjectName>KeyboardSwitcherC</ProjectName>
+    <ProjectName>Cwitcher</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
@@ -45,7 +45,7 @@
   <PropertyGroup>
     <OutDir>$(ProjectDir)bin\$(Configuration)\</OutDir>
     <IntDir>$(ProjectDir)obj\$(Configuration)\</IntDir>
-    <TargetName>KeyboardSwitcherC</TargetName>
+    <TargetName>Cwitcher</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -104,7 +104,7 @@ xcopy /Y /I /Q "$(ProjectDir)resources\icons\preview\*.png" "$(OutDir)resources\
     <ClInclude Include="src\resource.h" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="KeyboardSwitcherC.rc" />
+    <ResourceCompile Include="Cwitcher.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets" />

@@ -37,6 +37,7 @@ static UiBitmapAsset g_ui_asset_keyboard = { 0 };
 static UiBitmapAsset g_ui_asset_autostart = { 0 };
 static UiBitmapAsset g_ui_asset_sound = { 0 };
 static UiBitmapAsset g_ui_asset_info = { 0 };
+static UiBitmapAsset g_ui_asset_info_hint = { 0 };
 static UiBitmapAsset g_ui_asset_log = { 0 };
 static UiBitmapAsset g_ui_asset_save_white = { 0 };
 static UiBitmapAsset g_ui_asset_delete = { 0 };
@@ -50,7 +51,7 @@ static UiBitmapAsset g_ui_asset_logo_large = { 0 };
 static wchar_t g_last_badge[8] = L"";
 static BOOL g_settings_syncing = FALSE;
 
-static const wchar_t *GITHUB_REPOSITORY_URL = L"https://github.com/Astrent-bear/KeyboardSwitcher";
+static const wchar_t *GITHUB_REPOSITORY_URL = L"https://github.com/Astrent-bear/Cwitcher";
 
 #define SETTINGS_LANGUAGE_MENU_EN 42001
 #define SETTINGS_LANGUAGE_MENU_UK 42002
@@ -181,7 +182,7 @@ static const wchar_t *GetUiText(UiTextId id) {
         case TXT_STATUS_IDLE: return L"Натисніть «Запис», щоб задати нову комбінацію. Зміни зберігаються автоматично.";
         case TXT_STATUS_CAPTURE_SELECTED: return L"Натисніть нову комбінацію для виділеного тексту. Esc скасовує запис.";
         case TXT_STATUS_CAPTURE_LASTWORD: return L"Натисніть нову комбінацію для останнього слова. Esc скасовує запис.";
-        case TXT_GITHUB_LINK: return L"GitHub: github.com/Astrent-bear/KeyboardSwitcher";
+        case TXT_GITHUB_LINK: return L"GitHub: github.com/Astrent-bear/Cwitcher";
         case TXT_VERSION_LABEL: return L"Версія: " APP_VERSION;
         case TXT_STORE_BUTTON: return L"Microsoft\r\nStore";
         case TXT_STORE_PLACEHOLDER_MESSAGE: return L"Посилання на Microsoft Store буде додано пізніше.";
@@ -220,7 +221,7 @@ static const wchar_t *GetUiText(UiTextId id) {
     case TXT_STATUS_IDLE: return L"Use Record to capture a new shortcut. Changes are saved automatically.";
     case TXT_STATUS_CAPTURE_SELECTED: return L"Press a new shortcut for selected text. Esc cancels capture.";
     case TXT_STATUS_CAPTURE_LASTWORD: return L"Press a new shortcut for last word. Esc cancels capture.";
-    case TXT_GITHUB_LINK: return L"GitHub: github.com/Astrent-bear/KeyboardSwitcher";
+    case TXT_GITHUB_LINK: return L"GitHub: github.com/Astrent-bear/Cwitcher";
     case TXT_VERSION_LABEL: return L"Version: " APP_VERSION;
     case TXT_STORE_BUTTON: return L"Microsoft\r\nStore";
     case TXT_STORE_PLACEHOLDER_MESSAGE: return L"The Microsoft Store link will be added later.";
@@ -775,6 +776,7 @@ static void LoadUiBitmapAssets(void) {
     LoadUiBitmapAsset(&g_ui_asset_autostart, L"autostart_25.png");
     LoadUiBitmapAsset(&g_ui_asset_sound, L"sound_29.png");
     LoadUiBitmapAsset(&g_ui_asset_info, L"info_26.png");
+    LoadUiBitmapAsset(&g_ui_asset_info_hint, L"info_20.png");
     LoadUiBitmapAsset(&g_ui_asset_log, L"log_29.png");
     LoadUiBitmapAsset(&g_ui_asset_save_white, L"save_white_21.png");
     LoadUiBitmapAsset(&g_ui_asset_delete, L"delete_21.png");
@@ -793,6 +795,7 @@ static void DestroyUiBitmapAssets(void) {
     ReleaseUiBitmapAsset(&g_ui_asset_autostart);
     ReleaseUiBitmapAsset(&g_ui_asset_sound);
     ReleaseUiBitmapAsset(&g_ui_asset_info);
+    ReleaseUiBitmapAsset(&g_ui_asset_info_hint);
     ReleaseUiBitmapAsset(&g_ui_asset_log);
     ReleaseUiBitmapAsset(&g_ui_asset_save_white);
     ReleaseUiBitmapAsset(&g_ui_asset_delete);
@@ -1846,7 +1849,9 @@ static void DrawSettingsChrome(HWND hwnd, HDC dc) {
     DrawHotkeyCardText(dc, 312, GetUiText(TXT_GROUP_SELECTED), GetUiText(TXT_DESC_SELECTED));
     DrawHotkeyCardText(dc, 420, GetUiText(TXT_GROUP_LASTWORD), GetUiText(TXT_DESC_LASTWORD));
 
-    DrawGlyph(dc, UI_GLYPH_INFO, 66, 557, 20, UI_ACCENT_DARK);
+    if (!DrawBitmapAsset(dc, &g_ui_asset_info_hint, 66, 557, 20)) {
+        DrawGlyph(dc, UI_GLYPH_INFO, 66, 557, 20, UI_ACCENT_DARK);
+    }
 
     text_rect.left = UI_MARGIN;
     text_rect.top = 734;

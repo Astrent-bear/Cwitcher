@@ -1,4 +1,4 @@
-# KeyboardSwitcherC
+# Cwitcher
 
 Open-source Windows tray utility for keyboard layout switching and text transformation, inspired by Punto Switcher and implemented as a small native Win32 app in plain C.
 
@@ -10,7 +10,7 @@ The app converts text by key-position mapping, not dictionary translation.
 
 ### Що це
 
-`KeyboardSwitcherC` — це невелика Win32-утиліта для Windows, яка живе в треї та допомагає:
+`Cwitcher` — це невелика Win32-утиліта для Windows, яка живе в треї та допомагає:
 
 - перетворювати виділений текст між розкладками
 - перетворювати останнє набране слово
@@ -20,9 +20,9 @@ The app converts text by key-position mapping, not dictionary translation.
 
 ### Швидкий старт
 
-1. Завантажте останній portable-пакет зі сторінки [Releases](https://github.com/Astrent-bear/KeyboardSwitcher/releases/latest).
+1. Завантажте останній portable-пакет зі сторінки [Releases](https://github.com/Astrent-bear/Cwitcher/releases/latest).
 2. Розпакуйте zip-архів.
-3. Запустіть `KeyboardSwitcherC.exe`.
+3. Запустіть `Cwitcher.exe`.
 4. Програма стартує в системному треї.
 5. Двічі натисніть лівою кнопкою по іконці в треї, щоб відкрити налаштування, або натисніть правою кнопкою для меню.
 
@@ -37,7 +37,7 @@ The app converts text by key-position mapping, not dictionary translation.
   2. якщо слово було скинуте або не підходить, перетворити виділений текст
 - Звук перемикання за замовчуванням вимкнений
 - Debug log за замовчуванням вимкнений
-- Налаштування зберігаються в `%APPDATA%\KeyboardSwitcherC\settings.ini`
+- Налаштування зберігаються в `%APPDATA%\Cwitcher\settings.ini`
 
 ### Поточні можливості
 
@@ -74,7 +74,7 @@ The app converts text by key-position mapping, not dictionary translation.
 Щоб перевірити таблиці мапінгу без встановлення десятків мов у Windows, у `Debug`-збірці є режим self-test:
 
 ```powershell
-.\bin\Debug\KeyboardSwitcherC.exe --self-test
+.\bin\Debug\Cwitcher.exe --self-test
 ```
 
 Після запуску створюється звіт:
@@ -109,8 +109,8 @@ Self-test перевіряє:
 
 Відкрити проєкт у Visual Studio:
 
-- `KeyboardSwitcherC.sln`
-- `KeyboardSwitcherC.vcxproj`
+- `Cwitcher.sln`
+- `Cwitcher.vcxproj`
 
 Або зібрати через PowerShell:
 
@@ -120,8 +120,8 @@ powershell -ExecutionPolicy Bypass -File .\build.ps1
 
 ### Готові збірки
 
-- Debug: `bin\Debug\KeyboardSwitcherC.exe`
-- Release: `bin\Release\KeyboardSwitcherC.exe`
+- Debug: `bin\Debug\Cwitcher.exe`
+- Release: `bin\Release\Cwitcher.exe`
 
 ### Структура проєкту
 
@@ -146,7 +146,7 @@ powershell -ExecutionPolicy Bypass -File .\build.ps1
 
 ### What it is
 
-`KeyboardSwitcherC` is a small Win32 tray utility for Windows that can:
+`Cwitcher` is a small Win32 tray utility for Windows that can:
 
 - convert selected text between keyboard layouts
 - convert the last typed word
@@ -156,9 +156,9 @@ This is not dictionary translation. The app works through key-position mapping.
 
 ### Quick start
 
-1. Download the latest portable package from [Releases](https://github.com/Astrent-bear/KeyboardSwitcher/releases/latest).
+1. Download the latest portable package from [Releases](https://github.com/Astrent-bear/Cwitcher/releases/latest).
 2. Extract the zip archive.
-3. Run `KeyboardSwitcherC.exe`.
+3. Run `Cwitcher.exe`.
 4. The app starts in the system tray.
 5. Double-click the tray icon to open settings, or right-click it to open the tray menu.
 
@@ -173,7 +173,7 @@ This is not dictionary translation. The app works through key-position mapping.
   2. selected text conversion as fallback when the word was reset or the input context changed
 - Switch sound is disabled by default
 - Debug logging is disabled by default
-- Settings are stored in `%APPDATA%\KeyboardSwitcherC\settings.ini`
+- Settings are stored in `%APPDATA%\Cwitcher\settings.ini`
 
 ### Current features
 
@@ -210,7 +210,7 @@ The current key-position mapping set covers 37 layouts:
 To validate the mapping tables without installing a large set of Windows layouts, the `Debug` build includes a self-test mode:
 
 ```powershell
-.\bin\Debug\KeyboardSwitcherC.exe --self-test
+.\bin\Debug\Cwitcher.exe --self-test
 ```
 
 It writes a report to:
@@ -246,8 +246,8 @@ Some warnings are expected for certain real-world layouts because a few keyboard
 
 Open the project in Visual Studio:
 
-- `KeyboardSwitcherC.sln`
-- `KeyboardSwitcherC.vcxproj`
+- `Cwitcher.sln`
+- `Cwitcher.vcxproj`
 
 Or build from PowerShell:
 
@@ -257,8 +257,8 @@ powershell -ExecutionPolicy Bypass -File .\build.ps1
 
 ### Output binaries
 
-- Debug: `bin\Debug\KeyboardSwitcherC.exe`
-- Release: `bin\Release\KeyboardSwitcherC.exe`
+- Debug: `bin\Debug\Cwitcher.exe`
+- Release: `bin\Release\Cwitcher.exe`
 
 ### Project structure
 

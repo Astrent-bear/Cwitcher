@@ -4,6 +4,26 @@
 
 ---
 
+## v0.6.0 - Cwitcher naming and Store preparation
+
+### Українською
+
+- Перейменовано продукт, Visual Studio project та вихідний exe на `Cwitcher`.
+- Оновлено GitHub-посилання, документацію, шаблони issues та локальні імена файлів під новий бренд.
+- Додано міграцію старого `%APPDATA%\KeyboardSwitcherC\settings.ini` у новий `%APPDATA%\Cwitcher\settings.ini`, щоб не втрачати налаштування після перейменування.
+- Оновлено ім'я debug log на `cwitcher.log`.
+- Дополіровано іконку клавіатури для рівнішого відображення у вікні налаштувань.
+
+### English
+
+- Renamed the product, Visual Studio project, and output executable to `Cwitcher`.
+- Updated GitHub links, documentation, issue templates, and local filenames for the new brand.
+- Added migration from the old `%APPDATA%\KeyboardSwitcherC\settings.ini` path to `%APPDATA%\Cwitcher\settings.ini` so settings survive the rename.
+- Updated the debug log filename to `cwitcher.log`.
+- Polished the keyboard icon for cleaner rendering in the settings window.
+
+---
+
 ## v0.5.0 - redesigned settings UI
 
 ### Українською

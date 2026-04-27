@@ -9,7 +9,7 @@ $projectRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 $src = Join-Path $projectRoot "src\\main.c"
 $outDir = Join-Path $projectRoot "bin\\$Configuration"
 $objDir = Join-Path $projectRoot "obj\\$Configuration"
-$outExe = Join-Path $outDir "KeyboardSwitcherC.exe"
+$outExe = Join-Path $outDir "Cwitcher.exe"
 $vswhere = "C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe"
 
 if (-not (Test-Path -LiteralPath $vswhere)) {
@@ -30,7 +30,7 @@ New-Item -ItemType Directory -Force -Path $outDir | Out-Null
 New-Item -ItemType Directory -Force -Path $objDir | Out-Null
 
 $optFlags = if ($Configuration -eq "Release") { "/O2 /DNDEBUG" } else { "/Zi /Od /DDEBUG" }
-$pdb = Join-Path $outDir "KeyboardSwitcherC.pdb"
+$pdb = Join-Path $outDir "Cwitcher.pdb"
 $obj = Join-Path $objDir "main.obj"
 
 $compile = @(
