@@ -1,68 +1,43 @@
 param(
     [ValidateSet("Debug", "Release")]
-    [string]$Configuration = "Debug"
+    [string]$Configuration = "Debug",
+
+    [ValidateSet("x64", "Win32")]
+    [string]$Platform = "x64"
 )
 
 $ErrorActionPreference = "Stop"
 
 $projectRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
-$src = Join-Path $projectRoot "src\\main.c"
-$outDir = Join-Path $projectRoot "bin\\$Configuration"
-$objDir = Join-Path $projectRoot "obj\\$Configuration"
-$outExe = Join-Path $outDir "Cwitcher.exe"
+$solution = Join-Path $projectRoot "Cwitcher.sln"
 $vswhere = "C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe"
+
+if (-not (Test-Path -LiteralPath $solution)) {
+    throw "Solution was not found at $solution"
+}
 
 if (-not (Test-Path -LiteralPath $vswhere)) {
     throw "vswhere.exe was not found."
 }
 
-$vsPath = & $vswhere -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+$vsPath = & $vswhere -latest -products * -requires Microsoft.Component.MSBuild -property installationPath
 if (-not $vsPath) {
-    throw "Visual Studio with C++ build tools was not found."
+    throw "Visual Studio with MSBuild was not found."
 }
 
-$vcvars = Join-Path $vsPath "VC\Auxiliary\Build\vcvars64.bat"
-if (-not (Test-Path -LiteralPath $vcvars)) {
-    throw "vcvars64.bat was not found at $vcvars"
+$msbuild = Join-Path $vsPath "MSBuild\Current\Bin\amd64\MSBuild.exe"
+if (-not (Test-Path -LiteralPath $msbuild)) {
+    $msbuild = Join-Path $vsPath "MSBuild\Current\Bin\MSBuild.exe"
 }
 
-New-Item -ItemType Directory -Force -Path $outDir | Out-Null
-New-Item -ItemType Directory -Force -Path $objDir | Out-Null
+if (-not (Test-Path -LiteralPath $msbuild)) {
+    throw "MSBuild.exe was not found under $vsPath"
+}
 
-$optFlags = if ($Configuration -eq "Release") { "/O2 /DNDEBUG" } else { "/Zi /Od /DDEBUG" }
-$pdb = Join-Path $outDir "Cwitcher.pdb"
-$obj = Join-Path $objDir "main.obj"
+$outExe = Join-Path $projectRoot "bin\$Configuration\Cwitcher.exe"
 
-$compile = @(
-    "cl",
-    "/nologo",
-    "/TC",
-    "/std:c11",
-    "/utf-8",
-    "/DUNICODE",
-    "/D_UNICODE",
-    "/DWIN32_LEAN_AND_MEAN",
-    "/D_CRT_SECURE_NO_WARNINGS",
-    "/W4",
-    "/wd4100",
-    "/wd4996",
-    $optFlags,
-    "/Fo`"$obj`"",
-    "/Fe`"$outExe`"",
-    "/Fd`"$pdb`"",
-    "`"$src`"",
-    "/link",
-    "/SUBSYSTEM:WINDOWS",
-    "user32.lib",
-    "shell32.lib",
-    "gdi32.lib",
-    "kernel32.lib"
-)
-
-$command = "`"$vcvars`" >nul && " + ($compile -join " ")
-
-Write-Host "Using vcvars: $vcvars"
-cmd /c $command
+Write-Host "Using MSBuild: $msbuild"
+& $msbuild $solution /p:Configuration=$Configuration /p:Platform=$Platform /m
 
 if ($LASTEXITCODE -ne 0) {
     throw "Build failed with exit code $LASTEXITCODE."
