@@ -63,10 +63,6 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>Ole32.lib;Windowscodecs.lib;Msimg32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
-    <PostBuildEvent>
-      <Command>if not exist "$(OutDir)resources\icons\preview" mkdir "$(OutDir)resources\icons\preview"
-xcopy /Y /I /Q "$(ProjectDir)resources\icons\preview\*.png" "$(OutDir)resources\icons\preview\" &gt;nul</Command>
-    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -87,10 +83,6 @@ xcopy /Y /I /Q "$(ProjectDir)resources\icons\preview\*.png" "$(OutDir)resources\
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalDependencies>Ole32.lib;Windowscodecs.lib;Msimg32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
-    <PostBuildEvent>
-      <Command>if not exist "$(OutDir)resources\icons\preview" mkdir "$(OutDir)resources\icons\preview"
-xcopy /Y /I /Q "$(ProjectDir)resources\icons\preview\*.png" "$(OutDir)resources\icons\preview\" &gt;nul</Command>
-    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="src\input.c" />

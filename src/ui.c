@@ -647,9 +647,7 @@ static BOOL EnsureWicFactory(void) {
     return TRUE;
 }
 
-static BOOL LoadUiBitmapAsset(UiBitmapAsset *asset, const wchar_t *file_name) {
-    wchar_t path[MAX_PATH];
-    IWICBitmapDecoder *decoder = NULL;
+static BOOL DecodeUiBitmapAsset(UiBitmapAsset *asset, IWICBitmapDecoder *decoder, const wchar_t *asset_name) {
     IWICBitmapFrameDecode *frame = NULL;
     IWICFormatConverter *converter = NULL;
     HDC screen = NULL;
@@ -663,38 +661,19 @@ static BOOL LoadUiBitmapAsset(UiBitmapAsset *asset, const wchar_t *file_name) {
     HRESULT hr;
     BOOL success = FALSE;
 
-    if (asset == NULL) {
+    if (asset == NULL || decoder == NULL) {
         return FALSE;
-    }
-
-    if (asset->bitmap != NULL) {
-        return TRUE;
-    }
-
-    if (!EnsureWicFactory()) {
-        return FALSE;
-    }
-
-    if (!BuildPreviewAssetPath(file_name, path, ARRAYSIZE(path))) {
-        return FALSE;
-    }
-
-    hr = g_wic_factory->lpVtbl->CreateDecoderFromFilename(
-        g_wic_factory, path, NULL, GENERIC_READ, WICDecodeMetadataCacheOnLoad, &decoder);
-    if (FAILED(hr)) {
-        LogDebug(L"Failed to open UI PNG asset %ls. HRESULT=0x%08lx.", path, (unsigned long)hr);
-        goto cleanup;
     }
 
     hr = decoder->lpVtbl->GetFrame(decoder, 0, &frame);
     if (FAILED(hr)) {
-        LogDebug(L"Failed to read UI PNG frame %ls. HRESULT=0x%08lx.", path, (unsigned long)hr);
+        LogDebug(L"Failed to read UI PNG frame %ls. HRESULT=0x%08lx.", asset_name, (unsigned long)hr);
         goto cleanup;
     }
 
     hr = g_wic_factory->lpVtbl->CreateFormatConverter(g_wic_factory, &converter);
     if (FAILED(hr)) {
-        LogDebug(L"Failed to create WIC format converter for %ls. HRESULT=0x%08lx.", path, (unsigned long)hr);
+        LogDebug(L"Failed to create WIC format converter for %ls. HRESULT=0x%08lx.", asset_name, (unsigned long)hr);
         goto cleanup;
     }
 
@@ -707,13 +686,13 @@ static BOOL LoadUiBitmapAsset(UiBitmapAsset *asset, const wchar_t *file_name) {
         0.0f,
         WICBitmapPaletteTypeCustom);
     if (FAILED(hr)) {
-        LogDebug(L"Failed to convert UI PNG %ls to 32bppPBGRA. HRESULT=0x%08lx.", path, (unsigned long)hr);
+        LogDebug(L"Failed to convert UI PNG %ls to 32bppPBGRA. HRESULT=0x%08lx.", asset_name, (unsigned long)hr);
         goto cleanup;
     }
 
     hr = converter->lpVtbl->GetSize(converter, &width, &height);
     if (FAILED(hr) || width == 0 || height == 0) {
-        LogDebug(L"Failed to read UI PNG dimensions for %ls. HRESULT=0x%08lx.", path, (unsigned long)hr);
+        LogDebug(L"Failed to read UI PNG dimensions for %ls. HRESULT=0x%08lx.", asset_name, (unsigned long)hr);
         goto cleanup;
     }
 
@@ -732,7 +711,7 @@ static BOOL LoadUiBitmapAsset(UiBitmapAsset *asset, const wchar_t *file_name) {
 
     bitmap = CreateDIBSection(screen, &info, DIB_RGB_COLORS, &bits, NULL, 0);
     if (bitmap == NULL || bits == NULL) {
-        LogDebug(L"CreateDIBSection failed for UI PNG %ls. Win32=%lu.", path, GetLastError());
+        LogDebug(L"CreateDIBSection failed for UI PNG %ls. Win32=%lu.", asset_name, GetLastError());
         goto cleanup;
     }
 
@@ -740,7 +719,7 @@ static BOOL LoadUiBitmapAsset(UiBitmapAsset *asset, const wchar_t *file_name) {
     image_size = stride * height;
     hr = converter->lpVtbl->CopyPixels(converter, NULL, stride, image_size, (BYTE *)bits);
     if (FAILED(hr)) {
-        LogDebug(L"CopyPixels failed for UI PNG %ls. HRESULT=0x%08lx.", path, (unsigned long)hr);
+        LogDebug(L"CopyPixels failed for UI PNG %ls. HRESULT=0x%08lx.", asset_name, (unsigned long)hr);
         goto cleanup;
     }
 
@@ -763,6 +742,92 @@ cleanup:
     if (frame != NULL) {
         frame->lpVtbl->Release(frame);
     }
+
+    return success;
+}
+
+static BOOL LoadUiBitmapAssetFromResource(UiBitmapAsset *asset, int resource_id, const wchar_t *asset_name) {
+    HRSRC resource_info = NULL;
+    HGLOBAL resource_data = NULL;
+    void *resource_bytes = NULL;
+    DWORD resource_size = 0;
+    IWICStream *stream = NULL;
+    IWICBitmapDecoder *decoder = NULL;
+    HRESULT hr;
+    BOOL success = FALSE;
+
+    if (resource_id == 0) {
+        return FALSE;
+    }
+
+    resource_info = FindResourceW(NULL, MAKEINTRESOURCEW(resource_id), RT_RCDATA);
+    if (resource_info == NULL) {
+        return FALSE;
+    }
+
+    resource_data = LoadResource(NULL, resource_info);
+    resource_size = SizeofResource(NULL, resource_info);
+    if (resource_data == NULL || resource_size == 0) {
+        return FALSE;
+    }
+
+    resource_bytes = LockResource(resource_data);
+    if (resource_bytes == NULL) {
+        return FALSE;
+    }
+
+    hr = g_wic_factory->lpVtbl->CreateStream(g_wic_factory, &stream);
+    if (FAILED(hr)) {
+        LogDebug(L"Failed to create WIC stream for embedded UI PNG %ls. HRESULT=0x%08lx.", asset_name, (unsigned long)hr);
+        goto cleanup;
+    }
+
+    hr = stream->lpVtbl->InitializeFromMemory(stream, (BYTE *)resource_bytes, resource_size);
+    if (FAILED(hr)) {
+        LogDebug(L"Failed to initialize WIC stream for embedded UI PNG %ls. HRESULT=0x%08lx.", asset_name, (unsigned long)hr);
+        goto cleanup;
+    }
+
+    hr = g_wic_factory->lpVtbl->CreateDecoderFromStream(
+        g_wic_factory, (IStream *)stream, NULL, WICDecodeMetadataCacheOnLoad, &decoder);
+    if (FAILED(hr)) {
+        LogDebug(L"Failed to decode embedded UI PNG %ls. HRESULT=0x%08lx.", asset_name, (unsigned long)hr);
+        goto cleanup;
+    }
+
+    success = DecodeUiBitmapAsset(asset, decoder, asset_name);
+
+cleanup:
+    if (decoder != NULL) {
+        decoder->lpVtbl->Release(decoder);
+    }
+    if (stream != NULL) {
+        stream->lpVtbl->Release(stream);
+    }
+
+    return success;
+}
+
+static BOOL LoadUiBitmapAssetFromFile(UiBitmapAsset *asset, const wchar_t *file_name) {
+    wchar_t path[MAX_PATH];
+    IWICBitmapDecoder *decoder = NULL;
+    HRESULT hr;
+    BOOL success = FALSE;
+
+    if (!BuildPreviewAssetPath(file_name, path, ARRAYSIZE(path))) {
+        return FALSE;
+    }
+
+    hr = g_wic_factory->lpVtbl->CreateDecoderFromFilename(
+        g_wic_factory, path, NULL, GENERIC_READ, WICDecodeMetadataCacheOnLoad, &decoder);
+    if (FAILED(hr)) {
+        LogDebug(L"Failed to open UI PNG asset %ls. HRESULT=0x%08lx.", path, (unsigned long)hr);
+        goto cleanup;
+    }
+
+    success = DecodeUiBitmapAsset(asset, decoder, path);
+
+cleanup:
     if (decoder != NULL) {
         decoder->lpVtbl->Release(decoder);
     }
@@ -770,23 +835,43 @@ cleanup:
     return success;
 }
 
+static BOOL LoadUiBitmapAsset(UiBitmapAsset *asset, const wchar_t *file_name, int resource_id) {
+    if (asset == NULL) {
+        return FALSE;
+    }
+
+    if (asset->bitmap != NULL) {
+        return TRUE;
+    }
+
+    if (!EnsureWicFactory()) {
+        return FALSE;
+    }
+
+    if (LoadUiBitmapAssetFromResource(asset, resource_id, file_name)) {
+        return TRUE;
+    }
+
+    return LoadUiBitmapAssetFromFile(asset, file_name);
+}
+
 static void LoadUiBitmapAssets(void) {
-    LoadUiBitmapAsset(&g_ui_asset_language, L"language_24.png");
-    LoadUiBitmapAsset(&g_ui_asset_keyboard, L"keyboard_28.png");
-    LoadUiBitmapAsset(&g_ui_asset_autostart, L"autostart_25.png");
-    LoadUiBitmapAsset(&g_ui_asset_sound, L"sound_29.png");
-    LoadUiBitmapAsset(&g_ui_asset_info, L"info_26.png");
-    LoadUiBitmapAsset(&g_ui_asset_info_hint, L"info_20.png");
-    LoadUiBitmapAsset(&g_ui_asset_log, L"log_29.png");
-    LoadUiBitmapAsset(&g_ui_asset_save_white, L"save_white_21.png");
-    LoadUiBitmapAsset(&g_ui_asset_delete, L"delete_21.png");
-    LoadUiBitmapAsset(&g_ui_asset_reset, L"reset_21.png");
-    LoadUiBitmapAsset(&g_ui_asset_store, L"store_24.png");
-    LoadUiBitmapAsset(&g_ui_asset_logo_wordmark_header, L"logo_wordmark_header.png");
-    LoadUiBitmapAsset(&g_ui_asset_logo_wordmark_brand, L"logo_wordmark_brand.png");
-    LoadUiBitmapAsset(&g_ui_asset_logo_icon, L"logo_32.png");
-    LoadUiBitmapAsset(&g_ui_asset_logo_small, L"logo_top_40.png");
-    LoadUiBitmapAsset(&g_ui_asset_logo_large, L"logo_56.png");
+    LoadUiBitmapAsset(&g_ui_asset_language, L"language_24.png", IDB_UI_LANGUAGE_24);
+    LoadUiBitmapAsset(&g_ui_asset_keyboard, L"keyboard_28.png", IDB_UI_KEYBOARD_28);
+    LoadUiBitmapAsset(&g_ui_asset_autostart, L"autostart_25.png", IDB_UI_AUTOSTART_25);
+    LoadUiBitmapAsset(&g_ui_asset_sound, L"sound_29.png", IDB_UI_SOUND_29);
+    LoadUiBitmapAsset(&g_ui_asset_info, L"info_26.png", IDB_UI_INFO_26);
+    LoadUiBitmapAsset(&g_ui_asset_info_hint, L"info_20.png", IDB_UI_INFO_20);
+    LoadUiBitmapAsset(&g_ui_asset_log, L"log_29.png", IDB_UI_LOG_29);
+    LoadUiBitmapAsset(&g_ui_asset_save_white, L"save_white_21.png", IDB_UI_SAVE_WHITE_21);
+    LoadUiBitmapAsset(&g_ui_asset_delete, L"delete_21.png", IDB_UI_DELETE_21);
+    LoadUiBitmapAsset(&g_ui_asset_reset, L"reset_21.png", IDB_UI_RESET_21);
+    LoadUiBitmapAsset(&g_ui_asset_store, L"store_24.png", IDB_UI_STORE_24);
+    LoadUiBitmapAsset(&g_ui_asset_logo_wordmark_header, L"logo_wordmark_header.png", IDB_UI_LOGO_WORDMARK_HEADER);
+    LoadUiBitmapAsset(&g_ui_asset_logo_wordmark_brand, L"logo_wordmark_brand.png", IDB_UI_LOGO_WORDMARK_BRAND);
+    LoadUiBitmapAsset(&g_ui_asset_logo_icon, L"logo_32.png", IDB_UI_LOGO_32);
+    LoadUiBitmapAsset(&g_ui_asset_logo_small, L"logo_top_40.png", IDB_UI_LOGO_TOP_40);
+    LoadUiBitmapAsset(&g_ui_asset_logo_large, L"logo_56.png", IDB_UI_LOGO_56);
 }
 
 static void DestroyUiBitmapAssets(void) {

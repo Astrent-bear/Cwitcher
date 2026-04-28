@@ -4,6 +4,22 @@
 
 ---
 
+## v0.6.2 - embedded UI assets
+
+### Українською
+
+- Вбудовано PNG-іконки інтерфейсу в `Cwitcher.exe`, щоб portable-версія могла працювати як один самодостатній exe.
+- Прибрано копіювання runtime-іконок у `bin\...\resources` після збірки.
+- Залишено файловий fallback для розробки, якщо вбудований ресурс недоступний.
+
+### English
+
+- Embedded UI PNG icons into `Cwitcher.exe` so the portable build can work as a single self-contained exe.
+- Removed post-build copying of runtime icons into `bin\...\resources`.
+- Kept file-based loading as a development fallback if an embedded resource is unavailable.
+
+---
+
 ## v0.6.1 - release build cleanup
 
 ### Українською

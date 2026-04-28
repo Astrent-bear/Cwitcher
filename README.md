@@ -26,6 +26,8 @@ The app converts text by key-position mapping, not dictionary translation.
 4. Програма стартує в системному треї.
 5. Двічі натисніть лівою кнопкою по іконці в треї, щоб відкрити налаштування, або натисніть правою кнопкою для меню.
 
+Portable-збірка є самодостатньою: runtime-іконки інтерфейсу вбудовані в `Cwitcher.exe`, тому поруч не потрібна окрема папка `resources`.
+
 ### Поведінка за замовчуванням
 
 - Гаряча клавіша за замовчуванням: `Pause/Break`
@@ -161,6 +163,8 @@ This is not dictionary translation. The app works through key-position mapping.
 3. Run `Cwitcher.exe`.
 4. The app starts in the system tray.
 5. Double-click the tray icon to open settings, or right-click it to open the tray menu.
+
+The portable build is self-contained: runtime UI icons are embedded into `Cwitcher.exe`, so no adjacent `resources` folder is required.
 
 ### Default behavior
 
